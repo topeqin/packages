@@ -8,16 +8,32 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=python-chardet
-PKG_VERSION:=3.0.4
-PKG_RELEASE:=3
-PKG_LICENSE:=LGPL-2.1
+PKG_VERSION:=7.2.0
+PKG_RELEASE:=1
 
 PYPI_NAME:=chardet
-PKG_HASH:=84ab92ed1c4d4f16916e05906b6b75a6c0fb5db821cc65e70cbd64a3e2a5eaae
+PKG_HASH:=4ef7292b1342ea805c32cce58a45db204f59d080ed311d6cdaa7ca747fcc0cd5
+
+PKG_LICENSE:=LGPL-2.1-or-later
+PKG_LICENSE_FILES:=LICENSE
+
+HOST_BUILD_DEPENDS:= \
+	python3/host \
+	python-build/host \
+	python-installer/host \
+	python-wheel/host \
+	python-hatch-vcs/host \
+	python-hatchling/host
+
+PKG_BUILD_DEPENDS:= \
+	python-hatch-vcs/host \
+	python-hatchling/host
 
 include ../pypi.mk
 include $(INCLUDE_DIR)/package.mk
+include $(INCLUDE_DIR)/host-build.mk
 include ../python3-package.mk
+include ../python3-host-build.mk
 
 define Package/python3-chardet
   SUBMENU:=Python
@@ -26,11 +42,11 @@ define Package/python3-chardet
   MAINTAINER:=Alexandru Ardelean <ardeleanalex@gmail.com>
   URL:=https://github.com/chardet/chardet
   TITLE:=Universal encoding detector
-  DEPENDS:=+python3-light
+  DEPENDS:=+python3-light +python3-logging +python3-codecs
 endef
 
 define Package/python3-chardet/description
-  Universal encoding detector for Python 2 and 3
+  Universal encoding detector for Python
 endef
 
 define Py3Package/python3-chardet/install
@@ -38,9 +54,11 @@ define Py3Package/python3-chardet/install
 	$(CP) $(PKG_INSTALL_DIR)/usr/bin/* $(1)/usr/bin/
 	for bin in $(1)/usr/bin/*; do \
 		mv $$$$bin $$$${bin}3 ; \
+		$(LN) $$$${bin##*/}3 $$$$bin ; \
 	done
 endef
 
 $(eval $(call Py3Package,python3-chardet))
 $(eval $(call BuildPackage,python3-chardet))
 $(eval $(call BuildPackage,python3-chardet-src))
+$(eval $(call HostBuild))

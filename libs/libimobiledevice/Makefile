@@ -8,17 +8,18 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=libimobiledevice
-PKG_SOURCE_DATE:=2020-02-19
-PKG_SOURCE_VERSION:=3d8d13f0a70cefc1b12571b7f6aa2d1d4c58cffb
-PKG_RELEASE:=1
+PKG_RELEASE:=2
 
 PKG_SOURCE_PROTO:=git
-PKG_SOURCE_URL:=https://github.com/libimobiledevice/libimobiledevice
-PKG_MIRROR_HASH:=4239f90c68ecd250a900b5256eafc364c658dcb8cc7767c58bd59b6d6b249d4e
+PKG_SOURCE_URL:=https://github.com/libimobiledevice/libimobiledevice.git
+PKG_SOURCE_DATE:=2025-07-29
+PKG_SOURCE_VERSION:=c269d7e3a7c28ac33d05d5c3de6a8682f480abd0
+PKG_MIRROR_HASH:=47a6e5aea5dedaabcf91b68357fbb1e7a64bf9df22d4c10b13e85002207bcdf1
 
 PKG_MAINTAINER:=Rosen Penev <rosenp@gmail.com>
 PKG_LICENSE:=LGPL-2.1-or-later
 PKG_LICENSE_FILES:=COPYING.LESSER
+PKG_CPE_ID:=cpe:/a:libimobiledevice:libimobiledevice
 
 PKG_FIXUP:=autoreconf
 PKG_INSTALL:=1
@@ -41,7 +42,7 @@ define Package/libimobiledevice
   $(call Package/libimobiledevice/Default)
   SECTION:=libs
   CATEGORY:=Libraries
-  DEPENDS:=+libplist +libusbmuxd +libopenssl
+  DEPENDS:=+libplist +libimobiledevice-glue +libusbmuxd +libopenssl
   LICENSE:=LGPL-2.1-or-later
   LICENSE_FILES:=COPYING.LESSER
 endef
@@ -54,7 +55,7 @@ define Package/libimobiledevice-utils
   $(call Package/libimobiledevice/Default)
   SECTION:=utils
   CATEGORY:=Utilities
-  DEPENDS:=+libimobiledevice
+  DEPENDS:=+libimobiledevice +libtatsu
   LICENSE:=GPL-2.0-or-later
   ICENSE_FILES:=COPYING
 endef
@@ -64,20 +65,23 @@ define Package/libimobiledevice-utils/description
   This package contains the libimobiledevice utilities.
 endef
 
-CONFIGURE_ARGS += --without-cython
+CONFIGURE_ARGS += \
+	--disable-static \
+	--without-cython \
+	PACKAGE_VERSION=$(PKG_VERSION)
 
 define Build/InstallDev
 	$(INSTALL_DIR) $(1)/usr/include
 	$(CP) $(PKG_INSTALL_DIR)/usr/include/libimobiledevice $(1)/usr/include/
 	$(INSTALL_DIR) $(1)/usr/lib
-	$(CP) $(PKG_INSTALL_DIR)/usr/lib/libimobiledevice.{a,la,so*} $(1)/usr/lib/
+	$(CP) $(PKG_INSTALL_DIR)/usr/lib/libimobiledevice-1.0.so* $(1)/usr/lib/
 	$(INSTALL_DIR) $(1)/usr/lib/pkgconfig
-	$(CP) $(PKG_INSTALL_DIR)/usr/lib/pkgconfig/libimobiledevice-*.pc $(1)/usr/lib/pkgconfig/
+	$(CP) $(PKG_INSTALL_DIR)/usr/lib/pkgconfig/libimobiledevice-1.0.pc $(1)/usr/lib/pkgconfig/
 endef
 
 define Package/libimobiledevice/install
 	$(INSTALL_DIR) $(1)/usr/lib
-	$(CP) $(PKG_INSTALL_DIR)/usr/lib/libimobiledevice.so.* $(1)/usr/lib/
+	$(CP) $(PKG_INSTALL_DIR)/usr/lib/libimobiledevice-1.0.so.* $(1)/usr/lib/
 endef
 
 define Package/libimobiledevice-utils/install

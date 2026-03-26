@@ -8,18 +8,20 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=ntp
-PKG_VERSION:=4.2.8p13
-PKG_RELEASE:=4
+PKG_REALVERSION:=4.2.8p18
+PKG_VERSION:=$(subst p,_p,$(PKG_REALVERSION))
+PKG_RELEASE:=3
 
-PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
+PKG_SOURCE:=$(PKG_NAME)-$(PKG_REALVERSION).tar.gz
 PKG_SOURCE_URL:=http://www.eecis.udel.edu/~ntp/ntp_spool/ntp4/ntp-4.2/
-PKG_HASH:=288772cecfcd9a53694ffab108d1825a31ba77f3a8466b0401baeca3bc232a38
+PKG_HASH:=cf84c5f3fb1a295284942624d823fffa634144e096cfc4f9969ac98ef5f468e5
+PKG_BUILD_DIR:=$(BUILD_DIR)/$(PKG_NAME)-$(PKG_REALVERSION)
 
-PKG_LICENSE:=Unique
+PKG_MAINTAINER:=
+PKG_LICENSE:=NTP
 PKG_LICENSE_FILES:=COPYRIGHT html/copyright.html
 PKG_CPE_ID:=cpe:/a:ntp:ntp
 
-PKG_FIXUP:=autoreconf
 PKG_LIBTOOL_PATHS:=. sntp
 PKG_CHECK_FORMAT_SECURITY:=0
 PKG_BUILD_PARALLEL:=1
@@ -31,9 +33,8 @@ define Package/ntpd/Default
   SECTION:=net
   CATEGORY:=Network
   TITLE:=ISC ntp
-  MAINTAINER:=Peter Wagner <tripolar@gmx.at>
   URL:=http://www.ntp.org/
-  DEPENDS:=+libopenssl +libpthread +libcap +libevent2-pthreads
+  DEPENDS:=+libopenssl +libpthread +libcap
 endef
 
 define Package/ntpd/Default/description
@@ -69,17 +70,19 @@ endef
 define Package/ntp-utils
 $(call Package/ntpd/Default)
   TITLE+= utilities
+  DEPENDS+= +libevent2-pthreads
 endef
 
 define Package/ntp-utils/description
 $(call Package/ntpd/Default/description)
  .
- This package contains ntpdc, ntpq and ntptime.
+ This package contains ntpdc, ntpq, ntptime and sntp.
 endef
 
 define Package/ntp-keygen
 $(call Package/ntpd/Default)
   TITLE+=keygen
+  DEPENDS+= +libevent2-core
 endef
 
 define Package/ntp-keygen/description
@@ -107,6 +110,7 @@ CONFIGURE_ARGS += \
 	--enable-linuxcaps \
 	--with-yielding-select=yes \
 	--with-crypto \
+	$(if $(CONFIG_PACKAGE_ntp-utils),--with-sntp,--without-sntp) \
 	--with-openssl-incdir="$(STAGING_DIR)/usr/include" \
 	--with-openssl-libdir="$(STAGING_DIR)/usr/lib"
 
@@ -145,6 +149,7 @@ define Package/ntp-utils/install
 	$(INSTALL_BIN) $(PKG_BUILD_DIR)/ntpdc/ntpdc $(1)/usr/sbin/
 	$(INSTALL_BIN) $(PKG_BUILD_DIR)/ntpq/ntpq $(1)/usr/sbin/
 	$(INSTALL_BIN) $(PKG_BUILD_DIR)/util/ntptime $(1)/usr/sbin/
+	$(INSTALL_BIN) $(PKG_BUILD_DIR)/sntp/sntp $(1)/usr/sbin/
 endef
 
 define Package/ntp-keygen/install

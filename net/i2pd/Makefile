@@ -1,6 +1,7 @@
 #
 # Copyright (C) 2015, 2016 gxcreator
 # Copyright (C) 2017 OpenWrt.org
+# Copyright (C) 2021-2026 PurpleI2P team
 #
 # This is free software, licensed under the GNU General Public License v2.
 # See /LICENSE for more information.
@@ -9,65 +10,63 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=i2pd
-PKG_VERSION:=2.30.0
+PKG_VERSION:=2.59.0
 PKG_RELEASE:=1
 PKG_BUILD_PARALLEL:=1
 
-PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
-PKG_SOURCE_URL:=https://codeload.github.com/PurpleI2P/i2pd/tar.gz/$(PKG_VERSION)?
-PKG_HASH:=25915cbd33a9f53c89ddf7fbd68fccc5ffc89ab40d4445ccc813da74fae154f2
+PKG_SOURCE_PROTO:=git
+PKG_SOURCE_URL:=https://github.com/PurpleI2P/i2pd
+PKG_SOURCE_VERSION:=$(PKG_VERSION)
+PKG_MIRROR_HASH:=69b4840969375ba676a2125c197832eb167651f7965aa583ec03b4379ec19f58
 
 PKG_MAINTAINER:=David Yang <mmyangfl@gmail.com>
 PKG_LICENSE:=BSD-3-Clause
 PKG_LICENSE_FILES:=LICENSE
+PKG_CPE_ID:=cpe:/a:i2pd:i2pd
+
+PKG_BUILD_DEPENDS:=boost
 
 include $(INCLUDE_DIR)/package.mk
 
 define Package/i2pd
 	SECTION:=net
 	CATEGORY:=Network
-	DEPENDS:=+libopenssl +boost +boost-system +boost-filesystem \
-	         +boost-program_options +boost-date_time +libatomic +zlib
+	DEPENDS:=+libopenssl +boost +boost-program_options +libatomic +zlib
 	TITLE:=full-featured C++ implementation of I2P client
 	URL:=https://github.com/PurpleI2P/i2pd
 	USERID:=i2pd:i2pd
 endef
 
 define Package/i2pd/description
-	I2P (Invisible Internet Protocol) is a universal anonymous network layer. All
-	communications over I2P are anonymous and end-to-end encrypted, participants
-	don't reveal their real IP addresses.
-endef
-
-define Package/i2pd/conffiles
-	/etc/config/i2pd
-	/etc/i2pd/i2pd.conf
-	/etc/i2pd/tunnels.conf
-	/etc/i2pd/tunnels.d/*
+  I2P (Invisible Internet Protocol) is a universal anonymous network layer. All
+  communications over I2P are anonymous and end-to-end encrypted, participants
+  don't reveal their real IP addresses.
 endef
 
 TARGET_LDFLAGS+=-latomic
-MAKE_FLAGS+=USE_AESNI=no USE_AVX=no
+
+define Package/i2pd/conffiles
+/etc/config/i2pd
+/etc/i2pd/i2pd.conf
+/etc/i2pd/tunnels.conf
+/etc/i2pd/tunnels.d/*
+endef
 
 define Package/i2pd/install
-	$(INSTALL_DIR) $(1)/usr/sbin
-	$(INSTALL_BIN) $(PKG_BUILD_DIR)/i2pd $(1)/usr/sbin
-	$(INSTALL_DIR) $(1)/usr/share/i2pd
-	$(CP) $(PKG_BUILD_DIR)/contrib/certificates  $(1)/usr/share/i2pd
-	$(INSTALL_DIR) $(1)/etc/config
-	$(INSTALL_DATA) ./files/i2pd.config $(1)/etc/config/i2pd
-	$(INSTALL_DIR) $(1)/etc/i2pd
-	$(INSTALL_CONF) $(PKG_BUILD_DIR)/contrib/i2pd.conf $(1)/etc/i2pd
-	$(SED) ' \
-		s/127.0.0.1/192.168.1.1/g; \
-		s/datadir = \/var\/lib/datadir = \/etc/ \
-	' $(1)/etc/i2pd/i2pd.conf
-	$(INSTALL_CONF) $(PKG_BUILD_DIR)/contrib/tunnels.conf $(1)/etc/i2pd
-	$(INSTALL_DIR) $(1)/etc/i2pd/tunnels.d
-	$(INSTALL_CONF) $(PKG_BUILD_DIR)/contrib/tunnels.d/*.conf  $(1)/etc/i2pd/tunnels.d
-	# subscriptions.txt deprecated, see #8088
+	$(INSTALL_DIR) $(1)/usr/bin
+	$(INSTALL_BIN) $(PKG_BUILD_DIR)/i2pd $(1)/usr/bin
 	$(INSTALL_DIR) $(1)/etc/init.d
 	$(INSTALL_BIN) ./files/i2pd.init $(1)/etc/init.d/i2pd
+	$(INSTALL_DIR) $(1)/usr/share/i2pd
+	$(CP) $(PKG_BUILD_DIR)/contrib/certificates $(1)/usr/share/i2pd
+	$(INSTALL_DIR) $(1)/etc/config
+	$(INSTALL_CONF) ./files/i2pd.config $(1)/etc/config/i2pd
+	$(INSTALL_DIR) $(1)/etc/i2pd
+	$(INSTALL_DATA) $(PKG_BUILD_DIR)/contrib/i2pd.conf $(1)/etc/i2pd
+	$(INSTALL_DATA) $(PKG_BUILD_DIR)/contrib/tunnels.conf $(1)/etc/i2pd
+	# subscriptions.txt deprecated, see #8088
+	$(INSTALL_DIR) $(1)/etc/i2pd/tunnels.d
+	$(INSTALL_DATA) $(PKG_BUILD_DIR)/contrib/tunnels.d/README $(1)/etc/i2pd/tunnels.d
 endef
 
 $(eval $(call BuildPackage,i2pd))

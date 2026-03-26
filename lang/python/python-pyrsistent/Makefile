@@ -8,13 +8,13 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=python-pyrsistent
-PKG_VERSION:=0.15.4
-PKG_RELEASE:=2
+PKG_VERSION:=0.19.3
+PKG_RELEASE:=1
 
 PYPI_NAME:=pyrsistent
-PKG_HASH:=34b47fa169d6006b32e99d4b3c4031f155e6e68ebcc107d6454852e8e0ee6533
+PKG_HASH:=1a2994773706bbb4995c31a97bc94f1418314923bd1048c6d964837040376440
 
-PKG_MAINTAINER:=Josef Schlehofer <josef.schlehofer@nic.cz>
+PKG_MAINTAINER:=Josef Schlehofer <pepe.schlehofer@gmail.com>
 PKG_LICENSE:=MIT
 PKG_LICENSE_FILES:=LICENSE.mit
 
@@ -28,12 +28,13 @@ define Package/python3-pyrsistent
   CATEGORY:=Languages
   TITLE:=Persistent/Functional/Immutable data structures
   URL:=https://github.com/tobgu/pyrsistent
-  DEPENDS:=+python3-light +python3-six
+  DEPENDS:=+python3-light
 endef
 
 define Package/python3-pyrsistent/description
-  Pyrsistent is a number of persistent collections (by some referred to as functional data structures).
-  Persistent in the sense that they are immutable.
+Pyrsistent is a number of persistent collections (by some referred to as
+functional data structures). Persistent in the sense that they are
+immutable.
 endef
 
 $(eval $(call Py3Package,python3-pyrsistent))

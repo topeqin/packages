@@ -1,292 +1,305 @@
-// implementing *some* <regex> functions using pcre for performance:
-
 #ifndef __REGEXP_PCRE_HPP
 #define __REGEXP_PCRE_HPP
 
+#define PCRE2_CODE_UNIT_WIDTH 8
+
+#include <pcre2.h>
 #include <array>
-#include <pcre.h>
 #include <stdexcept>
 #include <string>
 #include <vector>
 
-
 namespace rgx {
-
+/* partially implement the std::regex interface using PCRE for performance
+ * (=> pass "match" as non-const reference)
+ */
 
 namespace regex_constants {
-  enum error_type
-    {
-      _enum_error_collate,
-      _enum_error_ctype,
-      _enum_error_escape,
-      _enum_error_backref,
-      _enum_error_brack,
-      _enum_error_paren,
-      _enum_error_brace,
-      _enum_error_badbrace,
-      _enum_error_range,
-      _enum_error_space,
-      _enum_error_badrepeat,
-      _enum_error_complexity,
-      _enum_error_stack,
-      _enum_error_last
-    };
-    static const error_type error_collate(_enum_error_collate);
-    static const error_type error_ctype(_enum_error_ctype);
-    static const error_type error_escape(_enum_error_escape);
-    static const error_type error_backref(_enum_error_backref);
-    static const error_type error_brack(_enum_error_brack);
-    static const error_type error_paren(_enum_error_paren);
-    static const error_type error_brace(_enum_error_brace);
-    static const error_type error_badbrace(_enum_error_badbrace);
-    static const error_type error_range(_enum_error_range);
-    static const error_type error_space(_enum_error_space);
-    static const error_type error_badrepeat(_enum_error_badrepeat);
-    static const error_type error_complexity(_enum_error_complexity);
-    static const error_type error_stack(_enum_error_stack);
-} // namespace regex_constants
-
-
+enum error_type {
+    _enum_error_collate,
+    _enum_error_ctype,
+    _enum_error_escape,
+    _enum_error_backref,
+    _enum_error_brack,
+    _enum_error_paren,
+    _enum_error_brace,
+    _enum_error_badbrace,
+    _enum_error_range,
+    _enum_error_space,
+    _enum_error_badrepeat,
+    _enum_error_complexity,
+    _enum_error_stack,
+    _enum_error_last
+};
+static const error_type error_collate(_enum_error_collate);
+static const error_type error_ctype(_enum_error_ctype);
+static const error_type error_escape(_enum_error_escape);
+static const error_type error_backref(_enum_error_backref);
+static const error_type error_brack(_enum_error_brack);
+static const error_type error_paren(_enum_error_paren);
+static const error_type error_brace(_enum_error_brace);
+static const error_type error_badbrace(_enum_error_badbrace);
+static const error_type error_range(_enum_error_range);
+static const error_type error_space(_enum_error_space);
+static const error_type error_badrepeat(_enum_error_badrepeat);
+static const error_type error_complexity(_enum_error_complexity);
+static const error_type error_stack(_enum_error_stack);
+}  // namespace regex_constants
 
 class regex_error : public std::runtime_error {
-
-private:
-
+  private:
     regex_constants::error_type errcode;
 
+  public:
+    explicit regex_error(regex_constants::error_type code, const char* what = "regex error")
+        : runtime_error(what), errcode(code)
+    {}
 
-public:
-
-    explicit regex_error(regex_constants::error_type code,
-                         const char * what="regex error")
-    : runtime_error(what), errcode(code)
-    { }
-
-
-    [[nodiscard]] auto code() const -> regex_constants::error_type
-    { return errcode; }
-
+    [[nodiscard]] auto virtual code() const -> regex_constants::error_type;
 };
 
-
+[[nodiscard]] auto regex_error::code() const -> regex_constants::error_type
+{
+    return errcode;
+}
 
 class regex {
-
-private:
-
+  private:
     int errcode = 0;
 
-    const char * errptr = nullptr;
+    PCRE2_SIZE erroffset = 0;
 
-    int erroffset = 0;
+    pcre2_code* const re = nullptr;
 
-    pcre * const re = nullptr;
-
-    static const std::array<regex_constants::error_type,86> errcode_pcre2regex;
+    static const std::array<regex_constants::error_type, 86> errcode_pcre2regex;
 
     static const auto BASE = 10;
 
-
-public:
-
+  public:
     inline regex() = default;
 
+    inline regex(const regex&) = delete;
 
-    inline regex(const regex &) = delete;
+    inline regex(regex&&) = default;
 
+    inline auto operator=(const regex&) -> regex& = delete;
 
-    inline regex(regex &&) = default;
+    inline auto operator=(regex &&) -> regex& = delete;
 
+    explicit regex(const std::string& str) : regex(str.c_str()) {}
 
-    inline auto operator=(const regex &) -> regex & = delete;
-
-
-    inline auto operator=(regex &&) -> regex & = delete;
-
-
-    explicit regex(const std::string & str)
-    : re{ pcre_compile2(str.c_str(), 0, &errcode, &errptr, &erroffset,nullptr) }
+    explicit regex(const char* const str)
+        : re{pcre2_compile((PCRE2_SPTR)str, PCRE2_ZERO_TERMINATED, 0, &errcode, &erroffset, nullptr)}
     {
-        if (re==nullptr) {
-            std::string what = std::string("regex error: ") + errptr + '\n';
-            what += "    '" + str + "'\n";
+        if (re == nullptr) {
+            std::vector<PCRE2_UCHAR> buffer(256);
+            int errlen;
+
+            errlen = pcre2_get_error_message(errcode, buffer.data(), buffer.size());
+            if (errlen < 0)
+                throw regex_error(errcode_pcre2regex.at(errlen));
+
+            std::string what = std::string("regex error: ") +
+                std::string(buffer.data(), buffer.data() + errlen) + '\n';
+            what += "    '" + std::string{str} + "'\n";
             what += "     " + std::string(erroffset, ' ') + '^';
 
             throw regex_error(errcode_pcre2regex.at(errcode), what.c_str());
         }
     }
 
+    ~regex()
+    {
+        if (re != nullptr) {
+            pcre2_code_free(re);
+        }
+    }
 
-    ~regex() { if (re != nullptr) { pcre_free(re); } }
-
-
-    inline auto operator()() const -> const pcre * { return re; }
-
+    inline auto operator()() const -> const pcre2_code*
+    {
+        return re;
+    }
 };
 
-
-
 class smatch {
-
     friend auto regex_search(std::string::const_iterator begin,
                              std::string::const_iterator end,
-                             smatch & match,
-                             const regex & rgx);
+                             smatch& match,      // NOLINT(google-runtime-references)
+                             const regex& rgx);  // match std::regex interface.
 
-
-private:
-
+  private:
     std::string::const_iterator begin;
 
     std::string::const_iterator end;
 
-    std::vector <int> vec{};
+    std::vector<PCRE2_SIZE> vec{};
 
     int n = 0;
 
-
-public:
-
-    [[nodiscard]] inline auto position(int i=0) const {
-        return (i<0 || i>=n) ? std::string::npos : vec[2*i];
+  public:
+    [[nodiscard]] inline auto position(int i = 0) const
+    {
+        return (i < 0 || i >= n) ? std::string::npos : vec[2 * i];
     }
 
-
-    [[nodiscard]] inline auto length(int i=0) const {
-        return (i<0 || i>=n) ? 0 : vec[2*i+1] - vec[2*i];
+    [[nodiscard]] inline auto length(int i = 0) const
+    {
+        return (i < 0 || i >= n) ? 0 : vec[2 * i + 1] - vec[2 * i];
     }
 
-
-    [[nodiscard]] auto str(int i=0) const -> std::string { // should we throw?
-        if (i<0 || i>=n) { return ""; }
-        int x = vec[2*i];
-        if (x<0) { return ""; }
-        int y = vec[2*i+1];
+    [[nodiscard]] auto str(int i = 0) const -> std::string
+    {  // should we throw?
+        if (i < 0 || i >= n) {
+            return "";
+        }
+        int x = vec[2 * i];
+        if (x < 0) {
+            return "";
+        }
+        int y = vec[2 * i + 1];
         return std::string{begin + x, begin + y};
     }
 
+    [[nodiscard]] auto format(const std::string& fmt) const;
 
-    [[nodiscard]] auto format(const std::string & fmt) const;
+    [[nodiscard]] auto size() const -> int
+    {
+        return n;
+    }
 
+    [[nodiscard]] inline auto empty() const
+    {
+        return n < 0;
+    }
 
-    [[nodiscard]] auto size() const -> int { return n; }
-
-
-    [[nodiscard]] inline auto empty() const { return n<0; }
-
-
-    [[nodiscard]] inline auto ready() const { return !vec.empty(); }
-
+    [[nodiscard]] inline auto ready() const
+    {
+        return !vec.empty();
+    }
 };
 
+inline auto regex_search(const std::string& subj, const regex& rgx);
 
-inline auto regex_search(const std::string & subj, const regex & rgx);
+auto regex_replace(const std::string& subj, const regex& rgx, const std::string& insert);
 
-
-auto regex_replace(const std::string & subj,
-                          const regex & rgx,
-                          const std::string & insert);
-
-
-inline auto regex_search(const std::string & subj, smatch & match,
-                         const regex & rgx);
-
+inline auto regex_search(const std::string& subj,
+                         smatch& match,      // NOLINT(google-runtime-references)
+                         const regex& rgx);  // match std::regex interface.
 
 auto regex_search(std::string::const_iterator begin,
                   std::string::const_iterator end,
-                  smatch & match,
-                  const regex & rgx);
-
-
+                  smatch& match,      // NOLINT(google-runtime-references)
+                  const regex& rgx);  // match std::regex interface.
 
 // ------------------------- implementation: ----------------------------------
 
-
-inline auto regex_search(const std::string & subj, const regex & rgx)
+inline auto regex_search(const std::string& subj, const regex& rgx)
 {
-    if (rgx()==nullptr) {
+    pcre2_match_data *match_data;
+
+    if (rgx() == nullptr) {
         throw std::runtime_error("regex_search error: no regex given");
     }
-    int n = pcre_exec(rgx(), nullptr, subj.c_str(), subj.length(),
-                      0, 0, nullptr, 0);
-    return n>=0;
-}
 
+    match_data = pcre2_match_data_create_from_pattern(rgx(), NULL);
+
+    int n =
+        pcre2_match(rgx(), (PCRE2_SPTR)subj.c_str(), static_cast<int>(subj.length()), 0, 0, match_data, nullptr);
+
+    pcre2_match_data_free(match_data);
+
+    return n >= 0;
+}
 
 auto regex_search(const std::string::const_iterator begin,
                   const std::string::const_iterator end,
-                  smatch & match,
-                  const regex & rgx)
+                  smatch& match,
+                  const regex& rgx)
 {
-    if (rgx()==nullptr) {
+    if (rgx() == nullptr) {
         throw std::runtime_error("regex_search error: no regex given");
     }
 
     int sz = 0;
-    pcre_fullinfo(rgx(), nullptr, PCRE_INFO_CAPTURECOUNT, &sz);
-    sz = 3*(sz + 1);
+    pcre2_pattern_info(rgx(), PCRE2_INFO_CAPTURECOUNT, &sz);
+    sz = 3 * (sz + 1);
 
     match.vec.reserve(sz);
 
-    const char * subj = &*begin;
-    size_t len = &*end - subj;
+    const char* subj = &*begin;
+    int n, len = static_cast<int>(&*end - subj);
+    unsigned int ov_count;
+    PCRE2_SIZE *ov;
 
     match.begin = begin;
     match.end = end;
 
-    match.n = pcre_exec(rgx(), nullptr, subj, len, 0, 0, &match.vec[0], sz);
+    pcre2_match_data *match_data = pcre2_match_data_create(sz, NULL);
+    n = pcre2_match(rgx(), (PCRE2_SPTR)subj, len, 0, 0, match_data, NULL);
+    ov = pcre2_get_ovector_pointer(match_data);
+    ov_count = pcre2_get_ovector_count(match_data);
 
-    if (match.n<0) { return false; }
-    if (match.n==0) { match.n = sz/3; }
+    match.vec.assign(ov, ov + ov_count);
+    match.n = n;
+
+    pcre2_match_data_free(match_data);
+
+    if (match.n < 0) {
+        return false;
+    }
+    if (match.n == 0) {
+        match.n = sz / 3;
+    }
 
     return true;
 }
 
-
-inline auto regex_search(const std::string & subj, smatch & match,
-                         const regex & rgx)
+inline auto regex_search(const std::string& subj, smatch& match, const regex& rgx)
 {
     return regex_search(subj.begin(), subj.end(), match, rgx);
 }
 
-
-auto smatch::format(const std::string & fmt) const {
+auto smatch::format(const std::string& fmt) const
+{
     std::string ret{};
     size_t index = 0;
 
-    size_t pos;
-    while ((pos=fmt.find('$', index)) != std::string::npos) {
-        ret.append(fmt, index, pos-index);
+    size_t pos = 0;
+    while ((pos = fmt.find('$', index)) != std::string::npos) {
+        ret.append(fmt, index, pos - index);
         index = pos + 1;
 
         char chr = fmt[index++];
-        int n = 0;
-        static const auto BASE = 10;
-        switch(chr) {
-
-            case '&': // match
-                ret += this->str(0);
+        switch (chr) {
+            case '&':  // match
+                ret += str(0);
                 break;
 
-            case '`': // prefix
-                ret.append(begin, begin+vec[0]);
+            case '`':  // prefix
+                ret.append(begin, begin + vec[0]);
                 break;
 
-            case '\'': // suffix
-                ret.append(begin+vec[1], end);
+            case '\'':  // suffix
+                ret.append(begin + vec[1], end);
                 break;
 
-            default: // number => submatch
-                while (isdigit(chr) != 0) {
-                    n = BASE*n + chr - '0';
-                    chr = fmt[index++];
-                }
+            default:
+                if (isdigit(chr) != 0) {  // one or two digits => submatch:
+                    int num = chr - '0';
+                    chr = fmt[index];
+                    if (isdigit(chr) != 0) {  // second digit:
+                        ++index;
+                        static const auto base = 10;
+                        num = num * base + chr - '0';
+                    }
+                    ret += str(num);
+                    break;
+                }  // else:
 
-                ret += n>0 ? str(n) : std::string{"$"};
-
+                ret += '$';
                 [[fallthrough]];
 
-            case '$': // escaped
+            case '$':  // escaped
                 ret += chr;
         }
     }
@@ -294,20 +307,16 @@ auto smatch::format(const std::string & fmt) const {
     return ret;
 }
 
-
-auto regex_replace(const std::string & subj,
-                          const regex & rgx,
-                          const std::string & insert)
+auto regex_replace(const std::string& subj, const regex& rgx, const std::string& insert)
 {
-    if (rgx()==nullptr) {
+    if (rgx() == nullptr) {
         throw std::runtime_error("regex_replace error: no regex given");
     }
 
     std::string ret{};
     auto pos = subj.begin();
 
-    for (smatch match;
-         regex_search(pos, subj.end(), match, rgx);
+    for (smatch match; regex_search(pos, subj.end(), match, rgx);
          pos += match.position(0) + match.length(0))
     {
         ret.append(pos, pos + match.position(0));
@@ -318,10 +327,7 @@ auto regex_replace(const std::string & subj,
     return ret;
 }
 
-
-
 // ------------ There is only the translation table below : -------------------
-
 
 const std::array<regex_constants::error_type, 86> regex::errcode_pcre2regex = {
     //   0  no error
@@ -438,7 +444,8 @@ const std::array<regex_constants::error_type, 86> regex::errcode_pcre2regex = {
     regex_constants::error_backref,
     //  56  inconsistent NEWLINE options
     regex_constants::error_escape,
-    //  57  \g is not followed by a braced, angle-bracketed, or quoted name/number or by a plain number
+    //  57  \g is not followed by a braced, angle-bracketed, or quoted name/number or by a plain
+    //  number
     regex_constants::error_backref,
     //  58  a numbered reference must not be zero
     regex_constants::error_backref,
@@ -495,11 +502,8 @@ const std::array<regex_constants::error_type, 86> regex::errcode_pcre2regex = {
     //  84  group name must start with a non-digit
     regex_constants::error_backref,
     //  85  parentheses are too deeply nested (stack check)
-    regex_constants::error_stack
-};
+    regex_constants::error_stack};
 
-
-} // namespace rgx
-
+}  // namespace rgx
 
 #endif

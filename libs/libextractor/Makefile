@@ -6,7 +6,7 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=libextractor
-PKG_VERSION:=1.9
+PKG_VERSION:=1.13
 PKG_RELEASE:=2
 
 # ToDo:
@@ -14,14 +14,18 @@ PKG_RELEASE:=2
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=@GNU/$(PKG_NAME)
-PKG_HASH:=f08f257d26c5e9b503f068d6753c8e55cb76f47f73a81da6ed2bba3de3fee2ff
+PKG_HASH:=bb8f312c51d202572243f113c6b62d8210301ab30cbaee604f9837d878cdf755
 
 PKG_LICENSE:=GPL-3.0-or-later
 PKG_LICENSE_FILES:=COPYING
 PKG_MAINTAINER:=Daniel Golle <daniel@makrotopia.org>
+PKG_CPE_ID:=cpe:/a:gnu:libextractor
 
-PKG_INSTALL:=1
 PKG_FIXUP:=autoreconf
+PKG_INSTALL:=1
+PKG_BUILD_PARALLEL:=1
+PKG_CONFIG_DEPENDS:= \
+	CONFIG_PACKAGE_libextractor-plugin-gstreamer
 
 PLUGINS:= \
 	archive:+libarchive-noopenssl \
@@ -31,7 +35,7 @@ PLUGINS:= \
 	gif:+giflib \
 	gstreamer:+libgstreamer1:+gstreamer1-plugins-base:+libgst1app:+libgst1pbutils:+libgst1tag \
 	it \
-	jpeg:+libjpeg \
+	jpeg:+libjpeg-turbo \
 	man \
 	mime:+libmagic \
 	mpeg:+libmpeg2 \
@@ -44,7 +48,6 @@ PLUGINS:= \
 	riff \
 	s3m \
 	sid \
-	thumbnailffmpeg:+libffmpeg-full:+libmagic \
 	tiff:+libtiff \
 	wav \
 	xm \
@@ -55,10 +58,12 @@ include $(INCLUDE_DIR)/package.mk
 include $(INCLUDE_DIR)/nls.mk
 
 CONFIGURE_ARGS += \
-	--enable-ffmpeg \
-	--with-gstreamer \
+	--disable-glibtest \
 	--disable-gsf \
-	--disable-rpath
+	--disable-rpath \
+	--with$(if $(CONFIG_PACKAGE_libextractor-plugin-gstreamer),,out)-gstreamer
+
+TARGET_CFLAGS += -D__GNU_LIBRARY__
 
 define Package/libextractor
 	SECTION:=libs

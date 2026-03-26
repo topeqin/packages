@@ -6,33 +6,33 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=grilo
-PKG_VERSION:=0.3.12
-PKG_RELEASE:=2
+PKG_VERSION:=0.3.19
+PKG_RELEASE:=1
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.xz
-PKG_SOURCE_URL:=@GNOME/grilo/0.3/
-PKG_HASH:=dbfbd6082103288592af97568180b9cc81a336a274ed5160412f87675ec11a71
+PKG_SOURCE_URL:=@GNOME/grilo/$(basename $(PKG_VERSION))
+PKG_HASH:=0869c81d19ab139c667d79567c14ddcb6cb5cbfc0108d04cade287eb29536706
 
 PKG_MAINTAINER:=W. Michael Petullo <mike@flyn.org>
 PKG_LICENSE:=LGPL-2.1-or-later
 PKG_LICENSE_FILES:=COPYING
+PKG_CPE_ID:=cpe:/a:gnome:grilo
 
-PKG_INSTALL:=1
 PKG_BUILD_DEPENDS:=vala/host
 
 include $(INCLUDE_DIR)/package.mk
 include $(INCLUDE_DIR)/nls.mk
-include ../../devel/meson/meson.mk
+include $(INCLUDE_DIR)/meson.mk
 
 define Package/grilo
   SECTION:=multimedia
   CATEGORY:=Multimedia
   TITLE:=grilo
   URL:=https://wiki.gnome.org/Projects/Grilo
-  DEPENDS:=+glib2 +libsoup +libxml2
+  DEPENDS:=+glib2 +libsoup3 +libxml2
 endef
 
-define Package/grilo/decription
+define Package/grilo/description
   Grilo is a framework that provides access to different sources of
   multimedia content, using a pluggable system.
 endef

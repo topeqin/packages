@@ -9,15 +9,15 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=python-wcwidth
-PKG_VERSION:=0.1.9
-PKG_RELEASE:=2
+PKG_VERSION:=0.2.6
+PKG_RELEASE:=1
 
 PYPI_NAME:=wcwidth
-PKG_HASH:=ee73862862a156bf77ff92b09034fc4825dd3af9cf81bc5b360668d425f3c5f1
+PKG_HASH:=a5220780a404dbe3353789870978e472cfe477761f06ee55077256e509b156d0
 
-PKG_MAINTAINER:=Jan Pavlinec <jan.pavlinec@nic.cz>
+PKG_MAINTAINER:=Jan Pavlinec <jan.pavlinec1@gmail.com>, Alexandru Ardelean <ardeleanalex@gmail.com>
 PKG_LICENSE:=MIT
-PKG_LICENSE_FILES:=LICENSE.txt
+PKG_LICENSE_FILES:=LICENSE
 
 include ../pypi.mk
 include $(INCLUDE_DIR)/package.mk
@@ -33,7 +33,8 @@ define Package/python3-wcwidth
 endef
 
 define Package/python3-wcwidth/description
-  Python library that measures the width of unicode strings rendered to a terminal
+Python library that measures the width of unicode strings rendered to a
+terminal
 endef
 
 $(eval $(call Py3Package,python3-wcwidth))

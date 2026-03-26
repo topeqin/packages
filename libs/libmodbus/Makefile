@@ -8,17 +8,18 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=libmodbus
-PKG_VERSION:=3.1.6
+PKG_VERSION:=3.1.12
 PKG_RELEASE:=1
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
-PKG_SOURCE_URL:=http://libmodbus.org/releases
-PKG_HASH:=d7d9fa94a16edb094e5fdf5d87ae17a0dc3f3e3d687fead81835d9572cf87c16
+PKG_SOURCE_URL:=https://github.com/stephane/libmodbus/releases/download/v$(PKG_VERSION)/
+PKG_HASH:=2f4d4191cd196c1fba131daec03b621db75129d8255c832fc66b259d9fc46e7b
 
 PKG_MAINTAINER:=Michael Heimpold <mhei@heimpold.de>
 
 PKG_LICENSE:=LGPL-2.1-or-later
 PKG_LICENSE_FILES:=COPYING.LESSER
+PKG_CPE_ID:=cpe:/a:libmodbus:libmodbus
 
 PKG_FIXUP:=autoreconf
 PKG_INSTALL:=1
@@ -36,7 +37,7 @@ define Package/libmodbus/description
   A Modbus library for Linux, Mac OS X, FreeBSD, QNX and Win32.
 endef
 
-CONFIGURE_ARGS += --without-documentation --disable-tests
+CONFIGURE_ARGS += --disable-tests
 TARGET_CFLAGS += $(FPIC)
 
 define Build/InstallDev

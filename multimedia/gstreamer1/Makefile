@@ -8,12 +8,12 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=gstreamer1
-PKG_VERSION:=1.16.2
+PKG_VERSION:=1.26.4
 PKG_RELEASE:=1
 
 PKG_SOURCE:=gstreamer-$(PKG_VERSION).tar.xz
 PKG_SOURCE_URL:=https://gstreamer.freedesktop.org/src/gstreamer
-PKG_HASH:=e3f044246783fd685439647373fa13ba14f7ab0b346eadd06437092f8419e94e
+PKG_HASH:=fe440e41804fabe036e06493b98680e2a8ce76d49879e3cdd6890d72e0614d75
 PKG_BUILD_DIR:=$(BUILD_DIR)/gstreamer-$(PKG_VERSION)
 
 PKG_MAINTAINER:=W. Michael Petullo <mike@flyn.org> \
@@ -22,12 +22,11 @@ PKG_LICENSE:=LGPL-2.1-or-later
 PKG_LICENSE_FILES:=COPYING
 PKG_CPE_ID:=cpe:/a:gstreamer_project:gstreamer
 
-PKG_INSTALL:=1
-PKG_BUILD_DEPENDS:=meson/host glib2/host
+PKG_BUILD_DEPENDS:=glib2/host gettext-full/host
 
 include $(INCLUDE_DIR)/package.mk
 include $(INCLUDE_DIR)/nls.mk
-include ../../devel/meson/meson.mk
+include $(INCLUDE_DIR)/meson.mk
 
 define Package/gstreamer1/Default
   CATEGORY:=Multimedia
@@ -58,7 +57,7 @@ define Package/gstreamer1-libs/description
  $(call Package/gstreamer1/description/Default)
  .
  This meta package contains only dependencies on the other GStreamer
- componenents.
+ components.
 endef
 
 define Package/gstreamer1-libs
@@ -102,7 +101,7 @@ endef
 define Package/libgstreamer1
   $(call Package/gstreamer1/Default)
   TITLE+= library (core)
-  DEPENDS+= +glib2 +libpthread +libxml2
+  DEPENDS+= +glib2 +libpthread +libxml2 +(armeb||powerpc||mips||mipsel):libatomic
   HIDDEN:=1
 endef
 
@@ -118,25 +117,28 @@ GST_VERSION:=1.0
 MESON_ARGS += \
 	-Dgst_debug=false \
 	-Dgst_parse=true \
-	-Dregistry=false \
+	-Dregistry=true \
 	-Dtracer_hooks=false \
 	-Dptp-helper-setuid-user=none \
-	-Dextra-checks=false \
-	-Doption-parsing=false \
+	-Dptp-helper-setuid-group=none \
+	-Doption-parsing=true \
 	-Dpoisoning=false \
+	-Dmemory-alignment=malloc \
 	-Dcheck=enabled \
 	-Dlibunwind=disabled \
 	-Dlibdw=disabled \
 	-Ddbghelp=disabled \
 	-Dbash-completion=disabled \
+	-Dcoretracers=disabled \
 	-Dexamples=disabled \
 	-Dbenchmarks=disabled \
 	-Dtools=enabled \
-	-Dgtk_doc=disabled \
 	-Dintrospection=disabled \
 	-Dnls=enabled \
 	-Dgobject-cast-checks=disabled \
-	-Dglib-asserts=disabled
+	-Dglib-asserts=disabled \
+	-Dextra-checks=disabled \
+	-Ddoc=disabled
 
 define Build/InstallDev
 	$(INSTALL_DIR) $(1)/usr/include/gstreamer-$(GST_VERSION)

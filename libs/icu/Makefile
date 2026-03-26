@@ -8,14 +8,14 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=icu4c
-MAJOR_VERSION:=66
-MINOR_VERSION:=1
+MAJOR_VERSION:=78
+MINOR_VERSION:=3
 PKG_VERSION:=$(MAJOR_VERSION).$(MINOR_VERSION)
 PKG_RELEASE:=1
 
-PKG_SOURCE:=$(PKG_NAME)-$(MAJOR_VERSION)_$(MINOR_VERSION)-src.tgz
-PKG_SOURCE_URL:=https://github.com/unicode-org/icu/releases/download/release-$(MAJOR_VERSION)-$(MINOR_VERSION)
-PKG_HASH:=52a3f2209ab95559c1cf0a14f24338001f389615bf00e2585ef3dbc43ecf0a2e
+PKG_SOURCE:=$(PKG_NAME)-$(MAJOR_VERSION).$(MINOR_VERSION)-sources.tgz
+PKG_SOURCE_URL:=https://github.com/unicode-org/icu/releases/download/release-$(MAJOR_VERSION).$(MINOR_VERSION)
+PKG_HASH:=3a2e7a47604ba702f345878308e6fefeca612ee895cf4a5f222e7955fabfe0c0
 
 PKG_LICENSE:=ICU
 PKG_LICENSE_FILES:=LICENSE
@@ -25,6 +25,7 @@ PKG_MAINTAINER:=Hirokazu MORIKAWA <morikw2@gmail.com>
 
 PKG_INSTALL:=1
 PKG_BUILD_PARALLEL:=1
+HOST_BUILD_PARALLEL:=1
 
 PKG_BUILD_DEPENDS:=icu/host
 HOST_BUILD_DEPENDS:=python3/host
@@ -41,6 +42,7 @@ define Package/icu
   TITLE:=International Components for Unicode
   URL:=http://icu-project.org
   DEPENDS:=+libstdcpp +libpthread
+  ABI_VERSION:=$(MAJOR_VERSION)
 endef
 
 define Package/icu/description
@@ -54,6 +56,7 @@ define Package/icu-full-data
   TITLE:=Full ICU Data
   URL:=http://icu-project.org
   DEPENDS:=+icu
+  ABI_VERSION:=$(MAJOR_VERSION)
 endef
 
 define Package/icu-full-data/description
@@ -77,8 +80,8 @@ endef
 CONFIGURE_CMD:= ./runConfigureICU
 CONFIGURE_ARGS:= \
 	Linux/gcc \
-	CC="$(TARGET_CC)" \
-	CXX="$(TARGET_CXX)" \
+	CC="$(TARGET_CC_NOCACHE)" \
+	CXX="$(TARGET_CXX_NOCACHE)" \
 	--target=$(GNU_TARGET_NAME) \
 	--host=$(GNU_TARGET_NAME) \
 	--build=$(GNU_HOST_NAME) \
@@ -99,8 +102,12 @@ CONFIGURE_ARGS:= \
 
 HOST_CONFIGURE_CMD:= ./runConfigureICU
 HOST_CONFIGURE_VARS:=
-HOST_CONFIGURE_ARGS:= \
-	Linux/gcc \
+ifeq ($(HOST_OS),Darwin)
+HOST_CONFIGURE_ARGS:= MacOSX
+else
+HOST_CONFIGURE_ARGS:= Linux/gcc
+endif
+HOST_CONFIGURE_ARGS+= \
 	--disable-debug \
 	--enable-release \
 	--enable-shared \
@@ -136,7 +143,11 @@ define Host/Install
 	$(INSTALL_DATA) $(HOST_BUILD_DIR)/config/icucross.* $(STAGING_DIR_HOSTPKG)/share/icu/$(PKG_VERSION)/config/
 	$(INSTALL_BIN)  $(HOST_BUILD_DIR)/bin/icupkg $(STAGING_DIR_HOSTPKG)/share/icu/$(PKG_VERSION)/bin/
 	$(INSTALL_BIN)  $(HOST_BUILD_DIR)/bin/pkgdata $(STAGING_DIR_HOSTPKG)/share/icu/$(PKG_VERSION)/bin/
+ifeq ($(HOST_OS),Darwin)
+	$(CP)           $(HOST_BUILD_DIR)/lib/*.dylib* $(STAGING_DIR_HOSTPKG)/share/icu/$(PKG_VERSION)/lib/
+else
 	$(CP)           $(HOST_BUILD_DIR)/lib/*.so* $(STAGING_DIR_HOSTPKG)/share/icu/$(PKG_VERSION)/lib/
+endif
 	$(RM)           $(STAGING_DIR_HOSTPKG)/share/icu/current
 	(cd $(STAGING_DIR_HOSTPKG)/share/icu;$(LN) $(PKG_VERSION) current)
 endef

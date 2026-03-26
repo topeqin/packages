@@ -11,13 +11,13 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=boost
-PKG_VERSION:=1.73.0
-PKG_SOURCE_VERSION:=1_73_0
+PKG_VERSION:=1.90.0
+PKG_SOURCE_VERSION:=1_90_0
 PKG_RELEASE:=1
 
 PKG_SOURCE:=$(PKG_NAME)_$(PKG_SOURCE_VERSION).tar.bz2
-PKG_SOURCE_URL:=@SF/$(PKG_NAME)/$(PKG_NAME)/$(PKG_VERSION) https://dl.bintray.com/boostorg/release/$(PKG_VERSION)/source/
-PKG_HASH:=4eb3b8d442b426dc35346235c8733b5ae35ba431690e38c6a8263dce9fcbb402
+PKG_SOURCE_URL:=https://archives.boost.io/release/$(PKG_VERSION)/source @SF/$(PKG_NAME)/$(PKG_NAME)/$(PKG_VERSION)
+PKG_HASH:=49551aff3b22cbc5c5a9ed3dbc92f0e23ea50a0f7325b0d198b705e8ee3fc305
 
 PKG_MAINTAINER:=Carlos M. Ferreira <carlosmf.pt@gmail.com>
 PKG_LICENSE:=BSL-1.0
@@ -29,10 +29,9 @@ HOST_BUILD_DIR:=$(BUILD_DIR_HOST)/$(PKG_NAME)_$(PKG_SOURCE_VERSION)
 
 HOST_BUILD_PARALLEL:=1
 PKG_BUILD_PARALLEL:=1
-PKG_USE_MIPS16:=0
+PKG_BUILD_FLAGS:=no-mips16 gc-sections lto
 
 include $(INCLUDE_DIR)/package.mk
-include $(INCLUDE_DIR)/nls.mk
 
 define Package/boost/Default
   SECTION:=libs
@@ -43,12 +42,14 @@ define Package/boost/Default
 endef
 
 define Package/boost/description
-This package provides the Boost v1.73.0 libraries.
+This package provides the Boost v1.90.0 libraries.
 Boost is a set of free, peer-reviewed, portable C++ source libraries.
 
 This package provides the following run-time libraries:
  - atomic
+ - charconv
  - chrono
+ - cobalt
  - container
  - context
  - contract
@@ -60,26 +61,28 @@ This package provides the following run-time libraries:
  - graph
  - - graph-parallel
  - iostreams
- - locale (Requires kernel being compiled with full language support)
+ - json
+ - locale
  - log
  - math
+ - nowide
  - program_options
  - python3
  - random
  - regex
  - serialization and wserialization
  - stackstrace
- - system
  - thread
  - timer
  - type_erasure
+ - url
  - wave
 
 There are many more header-only libraries supported by Boost.
-See more at http://www.boost.org/doc/libs/1_72_0/
+See more at http://www.boost.org/doc/libs/1_90_0/
 endef
 
-PKG_BUILD_DEPENDS:=boost/host PACKAGE_python3:python3
+PKG_BUILD_DEPENDS:=boost/host
 
 include ../../lang/python/python3-version.mk
 BOOST_PYTHON3_VER=$(PYTHON3_VERSION)
@@ -116,7 +119,7 @@ define Package/boost/config
 	# Invisible config dependency
 	config boost-context-exclude
 		bool
-		default y if (TARGET_arc770 || TARGET_archs38 || TARGET_octeon || TARGET_octeontx)
+		default y if (TARGET_arc770 || TARGET_archs38)
 		default n
 
 	config boost-coroutine-exclude
@@ -234,7 +237,7 @@ define Package/boost/config
 		config boost-use-name-tags
 			bool "Use tagged names."
 			help
-				Add name tags the lib files, to diferentiate each library version:
+				Add name tags the lib files, to differentiate each library version:
 				  "-mt" for multi-threading.
 				  "-d" for debugging.
 				  "-s" for runtime static link".
@@ -277,12 +280,10 @@ define Package/boost/config
 			select PACKAGE_boost-graph
 			default m if ALL
 
-		$(foreach lib,$(BOOST_LIBS), \
-			config PACKAGE_boost-$(lib)
+		$(foreach lib,$(BOOST_LIBS),
+		config PACKAGE_boost-$(lib)
 			prompt "Boost $(lib) $(if $(findstring python3,$(lib)),$(paren_left)v$(BOOST_PYTHON3_VER)$(paren_right) ,)library."
 			default m if ALL
-			$(if $(findstring locale,$(lib)),depends on BUILD_NLS,)\
-			$(if $(findstring python3,$(lib)),depends on PACKAGE_python3,)\
 			$(if $(findstring fiber,$(lib)),depends on !boost-fiber-exclude,)\
 			$(if $(findstring context,$(lib)),depends on !boost-context-exclude,)
 			$(if $(findstring coroutine,$(lib)),depends on !boost-coroutine-exclude,)
@@ -296,18 +297,23 @@ define Package/boost-test
 	$(call Package/boost/Default)
 	TITLE+= (test)
 	HIDDEN:=1
-	DEPENDS+=+boost-system +boost-timer
+	DEPENDS+=+boost-timer
 endef
 
 define Build/Configure
+endef
+
+define Package/boost/Default/install
+	$(INSTALL_DIR) $(1)/usr/lib
+	$(CP) $(PKG_INSTALL_DIR)/lib/libboost_$(2)*.so* $(1)/usr/lib/
 endef
 
 # 1: short name
 # 2: dependencies on other boost libraries (short name)
 # 3: dependencies on other packages
 # 4: conditional/inward dependencies
+# 5: dependencies compiled only when this package has been selected
 define DefineBoostLibrary
-
   BOOST_DEPENDS+= +$(if $(4),$(4):boost-$(1),boost-$(1))
   PKG_CONFIG_DEPENDS+= CONFIG_PACKAGE_boost-$(1)
 
@@ -316,43 +322,51 @@ define DefineBoostLibrary
   define Package/boost-$(1)
     $(call Package/boost/Default)
     TITLE+= ($(1))
-    DEPENDS+= $$(foreach lib,$(2),+boost-$$(lib)) $(3) $(if $(4),@$(4),)
+    DEPENDS+= $(foreach lib,$(2),+boost-$(lib)) $(3) $(if $(4),@$(4),) $(patsubst %,+PACKAGE_boost-$(1):%,$(5))
     HIDDEN:=1
   endef
 
   define Package/boost-$(1)/description
    This package contains the Boost $(1) library.
   endef
+
+  define Package/boost-$(1)/install
+    $(if $(CONFIG_boost-static-libs),true,$(call Package/boost/Default/install,$$(1),$(1)))
+  endef
 endef
 
-$(eval $(call DefineBoostLibrary,atomic,system))
-$(eval $(call DefineBoostLibrary,chrono,system))
+$(eval $(call DefineBoostLibrary,atomic))
+$(eval $(call DefineBoostLibrary,charconv,,,,libquadmath))
+$(eval $(call DefineBoostLibrary,chrono))
+$(eval $(call DefineBoostLibrary,cobalt,container context date_time,,,libopenssl))
 $(eval $(call DefineBoostLibrary,container))
-$(eval $(call DefineBoostLibrary,context,chrono system,,!boost-context-exclude))
-$(eval $(call DefineBoostLibrary,contract,system))
-$(eval $(call DefineBoostLibrary,coroutine,system chrono context thread,,!boost-coroutine-exclude))
+$(eval $(call DefineBoostLibrary,context,chrono ,,!boost-context-exclude))
+$(eval $(call DefineBoostLibrary,contract,atomic chrono container date_time thread))
+$(eval $(call DefineBoostLibrary,coroutine,chrono context thread,,!boost-coroutine-exclude))
 $(eval $(call DefineBoostLibrary,date_time))
 #$(eval $(call DefineBoostLibrary,exception,,))
 $(eval $(call DefineBoostLibrary,fiber,coroutine filesystem,,!boost-fiber-exclude))
-$(eval $(call DefineBoostLibrary,filesystem,system))
-$(eval $(call DefineBoostLibrary,graph,regex))
-$(eval $(call DefineBoostLibrary,iostreams,,+zlib +liblzma +libbz2 +zstd))
-$(eval $(call DefineBoostLibrary,locale,system,$(ICONV_DEPENDS),BUILD_NLS))
-$(eval $(call DefineBoostLibrary,log,system chrono date_time thread filesystem regex))
-$(eval $(call DefineBoostLibrary,math))
+$(eval $(call DefineBoostLibrary,filesystem,atomic))
+$(eval $(call DefineBoostLibrary,graph))
+$(eval $(call DefineBoostLibrary,iostreams,random regex,,,zlib liblzma libbz2 libzstd))
+$(eval $(call DefineBoostLibrary,json,container))
+$(eval $(call DefineBoostLibrary,locale,chrono thread charconv,,,icu))
+$(eval $(call DefineBoostLibrary,log,chrono date_time thread filesystem regex serialization))
+$(eval $(call DefineBoostLibrary,math, container random))
 #$(eval $(call DefineBoostLibrary,mpi,,)) # OpenMPI does no exist in OpenWRT at this time.
-$(eval $(call DefineBoostLibrary,program_options))
-$(eval $(call DefineBoostLibrary,python3,,,PACKAGE_python3))
-$(eval $(call DefineBoostLibrary,random,system))
-$(eval $(call DefineBoostLibrary,regex))
+$(eval $(call DefineBoostLibrary,nowide))
+$(eval $(call DefineBoostLibrary,program_options,container))
+$(eval $(call DefineBoostLibrary,python3,container graph,,,python3-base))
+$(eval $(call DefineBoostLibrary,random))
+$(eval $(call DefineBoostLibrary,regex,,,,icu))
 $(eval $(call DefineBoostLibrary,serialization))
 $(eval $(call DefineBoostLibrary,wserialization,serialization))
 $(eval $(call DefineBoostLibrary,stacktrace))
-$(eval $(call DefineBoostLibrary,system))
-$(eval $(call DefineBoostLibrary,thread,system chrono atomic))
+$(eval $(call DefineBoostLibrary,thread,chrono atomic container date_time))
 $(eval $(call DefineBoostLibrary,timer,chrono))
-$(eval $(call DefineBoostLibrary,type_erasure,chrono system thread))
-$(eval $(call DefineBoostLibrary,wave,date_time thread filesystem))
+$(eval $(call DefineBoostLibrary,type_erasure,chrono thread))
+$(eval $(call DefineBoostLibrary,url))
+$(eval $(call DefineBoostLibrary,wave,date_time thread filesystem container serialization regex))
 
 include $(INCLUDE_DIR)/host-build.mk
 
@@ -362,22 +376,26 @@ define Host/Compile
 
 	( cd $(HOST_BUILD_DIR) ; \
 		./bootstrap.sh --prefix=$(STAGING_DIR_HOSTPKG) \
-			--with-libraries=context,filesystem,program_options,regex,system ;\
+			--with-libraries=context,filesystem,program_options,regex ;\
 		./b2 --ignore-site-config install )
 endef
 
 CONFIGURE_PREFIX:=$(PKG_INSTALL_DIR)
-TARGET_LDFLAGS += -pthread -lrt
+TARGET_LDFLAGS += -pthread -lrt -lstdc++ -Wl,--as-needed,--print-gc-sections
 
 TARGET_CFLAGS += \
 	$(if $(CONFIG_SOFT_FLOAT),-DBOOST_NO_FENV_H) -fPIC
 
-EXTRA_CXXFLAGS += $(if $(CONFIG_GCC_USE_VERSION_5),-std=gnu++14,-std=gnu++17)
+ifeq ($(word 1,$(subst ., ,$(call qstrip,$(CONFIG_GCC_VERSION)))),11)
+    EXTRA_CXXFLAGS += -std=gnu++20
+else
+    EXTRA_CXXFLAGS += -std=gnu++23
+endif
 
 ifneq ($(findstring mips,$(ARCH)),)
     BOOST_ABI = o32
     ifneq ($(findstring 64,$(ARCH)),)
-        BOOST_ABI = o64
+        BOOST_ABI = n64
     endif
 else ifneq ($(findstring arm,$(ARCH)),)
     BOOST_ABI = aapcs
@@ -426,8 +444,7 @@ define Build/Compile
 					) \
 				) \
 			) \
-			$(if $(CONFIG_PACKAGE_boost-locale),boost.locale.iconv=on -sICONV_PATH=$(ICONV_PREFIX) boost.locale.posix=$(if $(USE_MUSL),on,off), \
-				boost.locale.iconv=off) \
+			$(if $(CONFIG_PACKAGE_boost-locale),boost.locale.std=off boost.locale.posix=off) \
 			\
 			$(if $(CONFIG_PACKAGE_boost-iostreams),-sNO_BZIP2=1 -sZLIB_INCLUDE=$(STAGING_DIR)/usr/include \
 				-sZLIB_LIBPATH=$(STAGING_DIR)/usr/lib) \
@@ -480,28 +497,16 @@ define Host/Install
 	$(CP) $(HOST_BUILD_DIR)/tools/build/src/engine/b2 $(STAGING_DIR_HOSTPKG)/bin/
 endef
 
-define Package/boost/Default/install
-	$(INSTALL_DIR) $(1)/usr/lib
-	$(CP) $(PKG_INSTALL_DIR)/lib/libboost_$(2)*.so* $(1)/usr/lib/
-endef
-
 define Package/boost-test/install
+	$(if $(CONFIG_boost-static-libs),true,
 		$(INSTALL_DIR) $(1)/usr/lib
-		$(CP) $(PKG_INSTALL_DIR)/lib/libboost_unit_test_framework*.so* $(1)/usr/lib/
-		$(CP) $(PKG_INSTALL_DIR)/lib/libboost_prg_exec_monitor*.so* $(1)/usr/lib/
-endef
-
-define BuildBoostLibrary
-  define Package/boost-$(1)/install
-    $(call Package/boost/Default/install,$$(1),$(1))
-  endef
-
-  $$(eval $$(call BuildPackage,boost-$(1)))
+		$(CP) $(PKG_INSTALL_DIR)/lib/libboost_{unit_test_framework,prg_exec_monitor}*.so* $(1)/usr/lib/
+	)
 endef
 
 $(eval $(call HostBuild))
 
-$(foreach lib,$(BOOST_LIBS),$(eval $(call BuildBoostLibrary,$(lib))))
+$(foreach lib,$(BOOST_LIBS),$(eval $(call BuildPackage,boost-$(lib))))
 $(eval $(call BuildPackage,boost-test))
 $(eval $(call BuildPackage,boost-libs))
 $(eval $(call BuildPackage,boost))

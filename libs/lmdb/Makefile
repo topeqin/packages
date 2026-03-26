@@ -1,15 +1,15 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=lmdb
-PKG_VERSION:=0.9.24
-PKG_RELEASE:=2
+PKG_VERSION:=0.9.33
+PKG_RELEASE:=1
 
-PKG_SOURCE:=LMDB_$(PKG_VERSION).tar.gz
-PKG_SOURCE_URL:=https://codeload.github.com/LMDB/lmdb/tar.gz/LMDB_$(PKG_VERSION)?
-PKG_HASH:=44602436c52c29d4f301f55f6fd8115f945469b868348e3cddaf91ab2473ea26
-PKG_BUILD_DIR:=$(BUILD_DIR)/lmdb-LMDB_$(PKG_VERSION)
+PKG_SOURCE_PROTO:=git
+PKG_SOURCE_URL:=https://git.openldap.org/openldap/openldap.git
+PKG_SOURCE_VERSION:=LMDB_$(PKG_VERSION)
+PKG_MIRROR_HASH:=cf6c73e3397ab8b8d81f45dd49a9becccf3c44727ffc640d4b905afda992b58b
 
-PKG_MAINTAINER:=Jan Pavlinec <jan.pavlinec@nic.cz>
+PKG_MAINTAINER:=Jan Pavlinec <jan.pavlinec1@gmail.com>, Alexandru Ardelean <ardeleanalex@gmail.com>
 PKG_LICENSE:=OLDAP-2.8
 PKG_LICENSE_FILES:=LICENSE
 
@@ -64,7 +64,7 @@ define Build/Compile
 	$(MAKE) -C "$(PKG_BUILD_DIR)/$(MAKE_PATH)/" \
 		CC="$(TARGET_CC)" \
 		CFLAGS+="$(TARGET_CFLAGS)" \
-		LDFLAGS+="$(TARGET_LDFLAGS)" \
+		LDFLAGS+="$(TARGET_LDFLAGS) $(if $(CONFIG_USE_GLIBC),-lpthread)" \
 		FPIC="$(FPIC)" \
 		AR="$(TARGET_AR)"
 endef

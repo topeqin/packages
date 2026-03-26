@@ -8,17 +8,19 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=x264
-PKG_VERSION:=snapshot-20190324-2245
-PKG_RELEASE:=2
+PKG_RELEASE:=1
 
-PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.bz2
-PKG_SOURCE_URL:=https://download.videolan.org/x264/snapshots/
+PKG_SOURCE_PROTO:=git
+PKG_SOURCE_URL:=https://code.videolan.org/videolan/x264.git
+PKG_SOURCE_DATE:=2024-05-13
+PKG_SOURCE_VERSION:=4613ac3c15fd75cebc4b9f65b7fb95e70a3acce1
+PKG_MIRROR_HASH:=03d8ca3495185504a601e36bff017e1044cb3f6c32cb567fb12d6f9707bb78cd
+
 PKG_MAINTAINER:=Adrian Panella <ianchi74@outlook.com>
-PKG_HASH:=68010057edaadffc7593933d13084e8d32e041c42b17c089513d88c917f2ad54
-
-PKG_LICENSE:=GPL-2.0
+PKG_LICENSE:=GPL-2.0-or-later
 PKG_LICENSE_FILES:=COPYING
 
+PKG_BUILD_PARALLEL:=1
 PKG_INSTALL:=1
 
 include $(INCLUDE_DIR)/package.mk
@@ -29,16 +31,16 @@ MAKE_FLAGS:=$(filter-out LD=%,$(MAKE_FLAGS)) LD="$(TARGET_CC) -o"
 # Instead of blacklisting a boatload of platforms just enable
 # optimization where it makes sense (matters) ie ARMv7+ and x86_64
 
-ifneq ($(findstring cortex-a,$(CPU_TYPE)),)
+ifneq ($(findstring cortex-a,$(CONFIG_CPU_TYPE)),)
   CONFIGURE_ARGS += --enable-lto
-  else
+else
   ifneq ($(CONFIG_TARGET_x86_64),)
     CONFIGURE_ARGS += --enable-lto
     ifeq ($(CONFIG_NASM),y)
       CONFIGURE_VARS+= AS=nasm
       MAKE_FLAGS+= AS=nasm
     endif
-    else
+  else
     CONFIGURE_VARS+= AS=
     MAKE_FLAGS+= AS=
     CONFIGURE_ARGS += --disable-asm

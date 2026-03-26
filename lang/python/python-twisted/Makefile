@@ -1,5 +1,6 @@
 #
-# Copyright (C) 2006-2011, 2015-2018 OpenWrt.org
+# Copyright (C) 2006-2011 OpenWrt.org
+# Copyright (C) 2015-2016, 2018-2023 Jeffery To
 #
 # This is free software, licensed under the GNU General Public License v2.
 # See /LICENSE for more information.
@@ -8,19 +9,21 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=python-twisted
-PKG_VERSION:=20.3.0
-PKG_RELEASE:=2
+PKG_VERSION:=25.5.0
+PKG_RELEASE:=1
 
 PYPI_NAME:=Twisted
-PYPI_SOURCE_EXT:=tar.bz2
-PKG_HASH:=d72c55b5d56e176563b91d11952d13b01af8725c623e498db5507b6614fc1e10
+PYPI_SOURCE_NAME:=twisted
+PKG_HASH:=1deb272358cb6be1e3e8fc6f9c8b36f78eb0fa7c2233d2dbe11ec6fee04ea316
 
 PKG_BUILD_DEPENDS:=libtirpc
 
 PKG_LICENSE:=MIT
 PKG_LICENSE_FILES:=LICENSE
-PKG_MAINTAINER:=Jeffery To <jeffery.to@gmail.com>
+PKG_MAINTAINER:=Alexandru Ardelean <ardeleanalex@gmail.com>
 PKG_CPE_ID:=cpe:/a:twistedmatrix:twisted
+
+PKG_BUILD_DEPENDS:=python-hatchling/host python-hatch-fancy-pypi-readme/host python-incremental/host
 
 include ../pypi.mk
 include $(INCLUDE_DIR)/package.mk
@@ -33,25 +36,32 @@ define Package/python3-twisted
   TITLE:=Asynchronous networking framework
   URL:=https://twistedmatrix.com/
   DEPENDS:= \
-      +python3-light \
+      +python3 \
+      +python3-appdirs \
       +python3-attrs \
       +python3-automat \
+      +python3-bcrypt \
       +python3-constantly \
-      +python3-incremental \
+      +python3-cryptography \
       +python3-hyperlink \
-      +python3-setuptools \
+      +python3-idna \
+      +python3-incremental \
+      +python3-pyopenssl \
+      +python3-service-identity \
+      +python3-typing-extensions \
       +python3-zope-interface
 endef
 
 define Package/python3-twisted/description
 Twisted is a networking engine written in Python, supporting numerous
-protocols. It contains a web server, numerous chat clients, chat servers,
-mail servers, and more.
+protocols. It contains a web server, numerous chat clients, chat
+servers, mail servers, and more.
 endef
 
 define Py3Package/python3-twisted/filespec
 +|$(PYTHON3_PKG_DIR)
 -|$(PYTHON3_PKG_DIR)/twisted/conch/scripts/tkconch.py
+-|$(PYTHON3_PKG_DIR)/twisted/test
 endef
 
 define Py3Package/python3-twisted/install
@@ -59,6 +69,7 @@ define Py3Package/python3-twisted/install
 	$(CP) $(PKG_INSTALL_DIR)/usr/bin/* $(1)/usr/bin/
 	for bin in $(1)/usr/bin/*; do \
 		mv $$$$bin $$$${bin}3 ; \
+		$(LN) $$$${bin##*/}3 $$$$bin ; \
 	done
 endef
 

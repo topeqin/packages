@@ -8,19 +8,19 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=conserver
-PKG_VERSION:=8.2.4
+PKG_VERSION:=8.3.0
 PKG_RELEASE:=1
-PKG_MAINTAINER:=Bjørn Mork <bjorn@mork.no>
 
-PKG_SOURCE_URL:=https://codeload.github.com/conserver/conserver/tar.gz/v$(PKG_VERSION)?
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
-PKG_HASH:=8d8b263d9531ebb827257bd67baf9200cac4fb7ffbe033122686e39ca42cddd6
+PKG_SOURCE_URL:=https://codeload.github.com/conserver/conserver/tar.gz/v$(PKG_VERSION)?
+PKG_HASH:=0595d202ec6ea3b2fdf51e126cd0094959d06593635f349ba2219566978478f0
 
 PKG_LICENSE:=BSD-3-Clause
 PKG_LICENSE_FILES:=LICENSE
 
 PKG_FIXUP:=autoreconf
 PKG_INSTALL:=1
+PKG_BUILD_PARALLEL:=1
 
 include $(INCLUDE_DIR)/package.mk
 
@@ -30,6 +30,18 @@ define Package/conserver
   TITLE:=Connect multiple user to a serial console with logging
   URL:=http://www.conserver.com/
   DEPENDS:=+libopenssl
+  MAINTAINER:=Bjørn Mork <bjorn@mork.no>
+  VARIANT:=default
+  CONFLICTS:=conserver-ipmi
+endef
+
+define Package/conserver-ipmi
+  $(call Package/conserver)
+  TITLE:=Conserver with IPMI support
+  PROVIDES:=conserver
+  DEPENDS+=+libipmiconsole
+  VARIANT:=ipmi
+  CONFLICTS:=
 endef
 
 define Package/conserver/description
@@ -47,11 +59,21 @@ define Package/conserver/description
  any of the equipment from home or wherever.
 endef
 
+define Package/conserver-ipmi/description
+ $(call Package/conserver/description)
+ .
+ This variant is built with support for IPMI serial-over-LAN consoles,
+ adding a large dependency on FreeIPMI
+endef
+
+
 define Package/conserver/conffiles
 /etc/conserver/conserver.cf
 /etc/conserver/conserver.passwd
 /etc/conserver/console.cf
 endef
+
+Package/conserver-ipmi/conffiles=$(Package/conserver/conffiles)
 
 CONFIGURE_ARGS += \
 	--with-openssl \
@@ -59,6 +81,10 @@ CONFIGURE_ARGS += \
 	--sysconfdir=/etc/conserver \
 	--with-port=3109 \
 	--with-logfile=/var/log/conserver/server.log
+
+ifeq ($(BUILD_VARIANT),ipmi)
+	CONFIGURE_ARGS += --with-freeipmi
+endif
 
 define Build/Prepare
 	$(call Build/Prepare/Default)
@@ -79,4 +105,7 @@ define Package/conserver/install
 	$(INSTALL_BIN) ./files/conserver.init $(1)/etc/init.d/conserver
 endef
 
+Package/conserver-ipmi/install=$(Package/conserver/install)
+
 $(eval $(call BuildPackage,conserver))
+$(eval $(call BuildPackage,conserver-ipmi))

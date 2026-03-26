@@ -8,19 +8,19 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=moreutils
-PKG_VERSION:=0.63
-PKG_RELEASE:=1
+PKG_VERSION:=0.69
+PKG_RELEASE:=2
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=https://git.kitenet.net/index.cgi/moreutils.git/snapshot
-PKG_HASH:=4fc86d56a8a276a0cec71cdabda5ccca50c7a44a2a1ccd888476741d1ce6831d
+PKG_HASH:=0f795d25356ca61544966646fb707d5be0b9864116be0269df5433f62d4e05d1
 
 PKG_MAINTAINER:=Nikil Mehta <nikil.mehta@gmail.com>
-PKG_LICENSE:=GPL-2.0
+PKG_LICENSE:=GPL-2.0-or-later
 PKG_LICENSE_FILES:=COPYING
 
-PKG_BUILD_PARALLEL:=0
 PKG_INSTALL:=1
+PKG_BUILD_PARALLEL:=0
 
 include $(INCLUDE_DIR)/package.mk
 
@@ -29,7 +29,7 @@ define Package/moreutils
   CATEGORY:=Utilities
   TITLE:=additional Unix utilities
   URL:=https://joeyh.name/code/moreutils/
-  DEPENDS:=+perl +perlbase-file +perlbase-getopt +perlbase-io +perlbase-ipc +perlbase-posix
+  DEPENDS:=+perl +perlbase-file +perlbase-getopt +perlbase-io +perlbase-ipc +perlbase-posix +perlbase-time
 endef
 
 define Package/moreutils/description

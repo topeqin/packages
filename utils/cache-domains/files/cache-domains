@@ -1,45 +1,85 @@
 #!/bin/sh
 
-CACHE_DOMAINS_DIR="/var/cache-domains"
+. /lib/config/uci.sh
+
+set -e
+
 CACHE_DOMAINS_SRC="https://api.github.com/repos/uklans/cache-domains/tarball/master"
+CACHE_DOMAINS_DIR="/var/cache-domains"
 CONFIG_FILE="/etc/cache-domains.json"
 
+dnsmasq_conf() {
+	local ACTION="${1}"
+	local ADDN_CONF_DIR="${2}"
+	local I=0
+	local DNSMASQ_CONF_DIR
+	local DNSMASQ_CONF_FILE
+
+	while uci_get "dhcp" "@dnsmasq[${I}]" > /dev/null; do
+		DNSMASQ_CONF_DIR="$(uci_get "dhcp" "@dnsmasq[${I}]" "confdir" "/tmp/dnsmasq.d" || :)"
+		uci_remove_list "dhcp" "@dnsmasq[${I}]" "addnmount" "${ADDN_CONF_DIR}"
+
+		mkdir -p "${DNSMASQ_CONF_DIR}"
+		case "${ACTION}" in
+			add)
+				ln -s "${ADDN_CONF_DIR}/"* "${DNSMASQ_CONF_DIR}" 2> /dev/null || :
+				uci_add_list "dhcp" "@dnsmasq[${I}]" "addnmount" "${ADDN_CONF_DIR}"
+				;;
+			remove)
+				for DNSMASQ_CONF_FILE in "${DNSMASQ_CONF_DIR}/"*; do
+					case "$(readlink "${DNSMASQ_CONF_FILE}" || echo "${DNSMASQ_CONF_FILE}")" in
+						"${ADDN_CONF_DIR}"*)
+							rm -f "${DNSMASQ_CONF_FILE}"
+							;;
+					esac
+				done
+				;;
+			*)
+				echo "ERROR: Invalid action '${ACTION}' for dnsmasq_conf()"
+				return 1
+				;;
+		esac
+
+		uci_commit "dhcp"
+
+		I=$((${I} + 1))
+	done
+
+	/etc/init.d/dnsmasq "restart"
+}
+
 configure() {
-	mkdir -p ${CACHE_DOMAINS_DIR}
-	rm -fr ${CACHE_DOMAINS_DIR}/*
+	local INITIAL_DIR
+	local SOURCE_DIR
+	mkdir -p "${CACHE_DOMAINS_DIR}"
+	rm -fr "${CACHE_DOMAINS_DIR:?}/"*
 
-	if ! wget -qO - ${CACHE_DOMAINS_SRC} | tar -xzC ${CACHE_DOMAINS_DIR}; then
+	if ! wget -qO - "${CACHE_DOMAINS_SRC}" | tar -xzC "${CACHE_DOMAINS_DIR}"; then
+		rm -fr "${CACHE_DOMAINS_DIR}"
 		echo "ERROR: Could not retrieve ${CACHE_DOMAINS_SRC}"
-		return 1
+		exit 1
 	fi
+	SOURCE_DIR="${CACHE_DOMAINS_DIR}/$(ls "${CACHE_DOMAINS_DIR}")"
 
-	INITIAL_DIR="$(pwd)"
-	cd ${CACHE_DOMAINS_DIR}/*/scripts/
-
-	if [ ! -f ${CONFIG_FILE} ]; then
-		cp config.example.json ${CONFIG_FILE}
+	if [ ! -f "${CONFIG_FILE}" ]; then
+		cp "${SOURCE_DIR}/scripts/config.example.json" "${CONFIG_FILE}"
 		echo "Using example config file ${CONFIG_FILE}"
 	fi
 
-	cp ${CONFIG_FILE} config.json
-	./create-dnsmasq.sh
-	cp ./output/dnsmasq/* /var/dnsmasq.d/
+	INITIAL_DIR="$(pwd)"
+	cd "${SOURCE_DIR}/scripts/"
+	cp "${CONFIG_FILE}" "config.json"
+	./create-dnsmasq.sh > /dev/null
+	cd "${INITIAL_DIR}"
 
-	cd ${INITIAL_DIR}
-
-	/etc/init.d/dnsmasq restart
+	dnsmasq_conf add "${SOURCE_DIR}/scripts/output/dnsmasq"
 }
 
 cleanup() {
-	# leave dnsmasq in a clean state
-	for FILE in ${CACHE_DOMAINS_DIR}/*/scripts/output/dnsmasq/*; do
-		rm -f /tmp/dnsmasq.d/$(basename ${FILE})
-	done
-
-	/etc/init.d/dnsmasq restart
+	dnsmasq_conf remove "${CACHE_DOMAINS_DIR}/$(ls "${CACHE_DOMAINS_DIR}")/scripts/output/dnsmasq"
 }
 
-case ${1} in
+case "${1}" in
 	config*)
 		configure
 		;;

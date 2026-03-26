@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2020 CZ.NIC, z. s. p. o. (https://www.nic.cz/)
+# Copyright (C) 2020-2021 CZ.NIC, z. s. p. o. (https://www.nic.cz/)
 #
 # This is free software, licensed under the GNU General Public License v2.
 # See /LICENSE for more information.
@@ -8,17 +8,17 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=python-pytest
-PKG_VERSION:=5.4.1
-PKG_RELEASE:=2
+PKG_VERSION:=7.4.0
+PKG_RELEASE:=1
 
 PYPI_NAME:=pytest
-PKG_HASH:=84dde37075b8805f3d1f392cc47e38a0e59518fb46a431cfdaf7cf1ce805f970
+PKG_HASH:=b4bf8c45bd59934ed84001ad51e11b4ee40d40a1229d2c79f9c592b0a3f6bd8a
 
-PKG_MAINTAINER:=Jan Pavlinec <jan.pavlinec@nic.cz>
+PKG_MAINTAINER:=Jan Pavlinec <jan.pavlinec1@gmail.com>, Alexandru Ardelean <ardeleanalex@gmail.com>
 PKG_LICENSE:=MIT
 PKG_LICENSE_FILES:=LICENSE
 
-HOST_PYTHON3_PACKAGE_BUILD_DEPENDS:=setuptools-scm
+PKG_BUILD_DEPENDS:=python-setuptools-scm/host
 
 include ../pypi.mk
 include $(INCLUDE_DIR)/package.mk
@@ -29,23 +29,17 @@ define Package/python3-pytest
   SECTION:=lang
   CATEGORY:=Languages
   TITLE:=Python testing framework
-  URL:=https://docs.pytest.org/en/latest/
+  URL:=https://pytest.org/
   DEPENDS:= \
-	+python3-light \
-	+python3-more-itertools \
-	+python3-py \
-	+python3-attrs \
-	+python3-pluggy \
+	+python3 \
+	+python3-iniconfig \
 	+python3-packaging \
-	+python3-wcwidth \
-	+python3-decimal \
-	+python3-logging \
-	+python3-urllib
+	+python3-pluggy
 endef
 
 define Package/python3-pytest/description
-  The pytest framework makes it easy to write small tests, yet scales to support
-  complex functional testing for applications and libraries.
+The pytest framework makes it easy to write small tests, yet scales to
+support complex functional testing for applications and libraries.
 endef
 
 $(eval $(call Py3Package,python3-pytest))

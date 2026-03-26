@@ -8,18 +8,17 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=apache
-PKG_VERSION:=2.4.43
-PKG_RELEASE:=2
+PKG_VERSION:=2.4.65
+PKG_RELEASE:=1
 PKG_SOURCE_NAME:=httpd
 
 PKG_SOURCE:=$(PKG_SOURCE_NAME)-$(PKG_VERSION).tar.bz2
 PKG_SOURCE_URL:=@APACHE/httpd/
-PKG_HASH:=a497652ab3fc81318cdc2a203090a999150d86461acff97c1065dc910fe10f43
+PKG_HASH:=58b8be97d9940ec17f7656c0c6b9f41b618aac468b894b534148e3296c53b8b3
 
 PKG_BUILD_DIR:=$(BUILD_DIR)/$(PKG_SOURCE_NAME)-$(PKG_VERSION)
 
-PKG_MAINTAINER:=Thomas Heil <heil@terminal-consulting.de>, \
-		Sebastian Kemper <sebastian_ml@gmx.net>
+PKG_MAINTAINER:=Thomas Heil <heil@terminal-consulting.de>
 PKG_LICENSE:=Apache-2.0
 PKG_LICENSE_FILES:=LICENSE
 
@@ -67,7 +66,7 @@ endef
 define Package/apache
 $(call Package/apache/Default)
   USERID:=apache=377:apache=377
-  DEPENDS:=+libapr +libaprutil +libpcre
+  DEPENDS:=+libapr +libaprutil +libpcre2
 endef
 
 define Package/apache/description
@@ -139,6 +138,11 @@ define Package/apache-suexec
 $(call Package/apache/Default)
   TITLE:=Apache suEXEC
   DEPENDS:=apache
+  # Directory "/usr/lib/apache2/suexec_dir" is installed with mode 0750
+  # and is only accessible by root and the group apache. This way apache
+  # can access the SUID binary "suexec" contained within while others
+  # cannot.
+  FILE_MODES:=/usr/lib/apache2/suexec_dir:root:apache:0750
 endef
 
 define Package/apache-suexec/description
@@ -197,7 +201,7 @@ CONFIGURE_ARGS+= \
 	--with-apr-util="$(STAGING_DIR)/usr/bin/apu-1-config" \
 	--with-apr="$(STAGING_DIR)/usr/bin/apr-1-config" \
 	--with-mpm=prefork \
-	--with-pcre="$(STAGING_DIR)/usr/bin/pcre-config" \
+	--with-pcre="$(STAGING_DIR)/usr/bin/pcre2-config" \
 	--with-program-name=apache2 \
 	--with-ssl
 
@@ -278,6 +282,9 @@ define Build/InstallDev
 	$(INSTALL_DIR) $(1)/usr/share/apache2/build
 	$(CP) $(PKG_INSTALL_DIR)/usr/share/apache2/build/* \
 				$(1)/usr/share/apache2/build
+	$(SED) 's%"/usr/bin"%"$(STAGING_DIR)/usr/bin"%' $(1)/usr/bin/apxs
+	$(SED) 's%/usr/share/apache2/build%$(STAGING_DIR)/usr/share/apache2/build%' \
+		$(1)/usr/bin/apxs
 	$(SED) 's%^prefix =.*%prefix = $(STAGING_DIR)/usr%' \
 		$(1)/usr/share/apache2/build/config_vars.mk
 endef
@@ -328,7 +335,7 @@ define Package/apache-icons/install
 endef
 
 define Package/apache-suexec/install
-	$(INSTALL_DIR) -m0750 $(1)/usr/lib/apache2/suexec_dir
+	$(INSTALL_DIR) $(1)/usr/lib/apache2/suexec_dir
 	$(INSTALL_SUID) $(PKG_INSTALL_DIR)/usr/sbin/suexec \
 			$(1)/usr/lib/apache2/suexec_dir
 endef
@@ -338,22 +345,6 @@ define Package/apache-utils/install
 	$(INSTALL_BIN) \
 		$(PKG_INSTALL_DIR)/usr/sbin/{checkgid,envvars*,htcacheclean,rotatelogs} \
 									$(1)/usr/sbin
-endef
-
-# Directory "suexec_dir" is installed with '-m0750' above and contains
-# SUID binary "suexec". Below post-install script changes the group of
-# "suexec_dir" to apache, so user apache can access the folder (and the
-# SUID binary). The script only changes the group if the directory is
-# currently owned by "root:root".
-define Package/apache-suexec/postinst
-#!/bin/sh
-if [ -z "$${IPKG_INSTROOT}" ]; then
-  dir="/usr/lib/apache2/suexec_dir"
-  if ! [ -L "$$dir" ] && [ -d "$$dir" ] && [ -O "$$dir" ] && [ -G "$$dir" ]; then
-    chown :apache "$$dir"
-  fi
-fi
-exit 0
 endef
 
 define Package/apache/Module

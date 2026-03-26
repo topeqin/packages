@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2010-2016 OpenWrt.org
+# Copyright (C) 2010-2025 OpenWrt.org
 #
 # This is free software, licensed under the GNU General Public License v2.
 # See /LICENSE for more information.
@@ -8,12 +8,12 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=grep
-PKG_VERSION:=3.4
+PKG_VERSION:=3.12
 PKG_RELEASE:=1
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.xz
 PKG_SOURCE_URL:=@GNU/grep
-PKG_HASH:=58e6751c41a7c25bfc6e9363a41786cff3ba5709cf11d5ad903cf7cce31cc3fb
+PKG_HASH:=2649b27c0e90e632eadcd757be06c6e9a4f48d941de51e7c0f83ff76408a07b9
 
 PKG_MAINTAINER:=Julen Landa Alustiza <julen@zokormazo.info>
 PKG_LICENSE:=GPL-3.0-or-later
@@ -25,12 +25,19 @@ PKG_BUILD_PARALLEL:=1
 
 include $(INCLUDE_DIR)/package.mk
 
+MAKE_FLAGS += SHELL="/bin/sh"
+TARGET_CFLAGS += -std=c17
+
 define Package/grep
   SECTION:=utils
   CATEGORY:=Utilities
   TITLE:=grep search utility - full version
-  DEPENDS:=+libpcre
+  DEPENDS:=+libpcre2
   URL:=https://www.gnu.org/software/grep/
+  ALTERNATIVES:=\
+    300:/bin/egrep:/usr/libexec/egrep-gnu \
+    300:/bin/fgrep:/usr/libexec/fgrep-gnu \
+    300:/bin/grep:/usr/libexec/grep-gnu
 endef
 
 define Package/grep/description
@@ -40,20 +47,10 @@ prints the matching lines.
 endef
 
 define Package/grep/install
-	$(INSTALL_DIR) $(1)/usr/bin
-	$(CP) $(PKG_INSTALL_DIR)/usr/bin/* $(1)/usr/bin
-endef
-
-define Package/grep/postinst
-#!/bin/sh
-[ -L "$${IPKG_INSTROOT}/bin/grep" ] && rm -f "$${IPKG_INSTROOT}/bin/grep"
-exit 0
-endef
-
-define Package/grep/prerm
-$${IPKG_INSTROOT}/bin/busybox grep -h 2>&1 | grep -q BusyBox && \
-ln -sf busybox $${IPKG_INSTROOT}/bin/grep
-exit 0
+	$(INSTALL_DIR) $(1)/usr/libexec
+	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/bin/egrep $(1)/usr/libexec/egrep-gnu
+	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/bin/fgrep $(1)/usr/libexec/fgrep-gnu
+	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/bin/grep $(1)/usr/libexec/grep-gnu
 endef
 
 $(eval $(call BuildPackage,grep))

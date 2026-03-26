@@ -9,12 +9,12 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=klish
-PKG_VERSION:=2.1.4
+PKG_VERSION:=2.2.3
 PKG_RELEASE:=2
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.xz
-PKG_SOURCE_URL:=http://libcode.org/attachments/download/70/
-PKG_HASH:=a89dd1027dce713407b6d68e836c8fdead56406dcfc650da84da8e0b92c9b2e5
+PKG_SOURCE_URL:=http://libcode.org/attachments/download/82
+PKG_HASH:=89a08295522fea9736a84e11da3d990641fc43b7e548626d2a56e75ed9d8d47b
 
 PKG_MAINTAINER:=Takashi Umeno <umeno.takashi@gmail.com>
 PKG_LICENSE:=BSD-3-Clause
@@ -24,6 +24,7 @@ PKG_INSTALL:=1
 PKG_BUILD_PARALLEL:=1
 
 include $(INCLUDE_DIR)/package.mk
+include $(INCLUDE_DIR)/nls.mk
 
 define Package/klish/default
   SECTION:=utils
@@ -48,13 +49,13 @@ define Package/klish/description
  klish is able to run using clish XML configuration files although
  current clish users may expect some changes in behavior.
  Konf and konfd are klish utilities that are used to store configuration
- informations in a way which is similar to what's found on CISCO devices.
+ information in a way which is similar to what's found on CISCO devices.
  More information about these tools is to be found on the klish web site.
 endef
 
 CONFIGURE_ARGS += --with-libxml2
 
-TARGET_CFLAGS += -D_XOPEN_SOURCE=500
+TARGET_CFLAGS += -D_GNU_SOURCE
 
 define Package/klish/install
 	$(INSTALL_DIR) $(1)/usr/bin

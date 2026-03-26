@@ -8,24 +8,22 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=openocd
-PKG_SOURCE_VERSION:=v0.10.0-1000-gdb23c13d
-PKG_VERSION:=$(PKG_SOURCE_VERSION)
+PKG_VERSION:=0.12.0
 PKG_RELEASE:=1
 
 PKG_SOURCE_PROTO:=git
-PKG_SOURCE_SUBDIR:=$(PKG_NAME)-$(PKG_VERSION)
-PKG_SOURCE_URL:=git://git.code.sf.net/p/openocd/code
-PKG_MIRROR_HASH:=6f8c0ecf240427654ad5e911b44f78996da931209280f4a19c1215802ff14638
-
-PKG_LICENSE:=GPL-2.0
-PKG_LICENSE_FILES:=COPYING
+PKG_SOURCE_VERSION:=v$(PKG_VERSION)
+PKG_SOURCE_URL:=https://git.code.sf.net/p/openocd/code
+PKG_MIRROR_HASH:=7fa2476feff229e6c7674dc27f949f8a573335abfa0b19cf27b9acf3937678f6
 
 PKG_MAINTAINER:=Paul Fertser <fercerpav@gmail.com>
+PKG_LICENSE:=GPL-2.0-only
+PKG_LICENSE_FILES:=COPYING
 PKG_CPE_ID:=cpe:/a:openocd:open_on-chip_debugger
 
-PKG_BUILD_PARALLEL:=1
-PKG_INSTALL:=1
 PKG_FIXUP:=autoreconf
+PKG_INSTALL:=1
+PKG_BUILD_PARALLEL:=1
 
 PKG_CONFIG_DEPENDS:=CONFIG_PACKAGE_openocd_with_usb
 
@@ -37,18 +35,11 @@ define Package/openocd
   CATEGORY:=Utilities
   TITLE:=OpenOCD Utility
   URL:=http://openocd.sf.net/
-  DEPENDS:=+PACKAGE_openocd_with_usb:libusb-1.0 \
-	+PACKAGE_openocd_with_usb:libusb-compat \
-	+PACKAGE_openocd_with_usb:libftdi1 \
-	+PACKAGE_openocd_with_usb:hidapi
-endef
-
-define Package/openocd/config
-  if PACKAGE_openocd
-	config PACKAGE_openocd_with_usb
-		bool "Build with support for USB adapters."
-		default y
-  endif
+  DEPENDS:=+libusb-1.0 \
+	+libftdi1 \
+	+hidapi \
+	+libgpiod \
+	+libjaylink
 endef
 
 define Package/openocd/description
@@ -72,15 +63,20 @@ endef
 define Build/Prepare
 	$(call Build/Prepare/Default)
 	-$(RM) $(PKG_BUILD_DIR)/guess-rev.sh
+	-$(RM) $(PKG_BUILD_DIR)/jimtcl/configure.ac
 endef
 
 CONFIGURE_ARGS += \
 	--prefix="/usr" \
 	--disable-werror \
 	MAKEINFO=true \
-	$(if $(CONFIG_PACKAGE_openocd_with_usb),,PKG_CONFIG=false) \
 	--enable-dummy \
-	--enable-sysfsgpio
+	--enable-sysfsgpio \
+	--enable-linuxgpiod
+
+ifeq ($(CONFIG_TARGET_bcm27xx),y)
+	CONFIGURE_ARGS += --enable-bcm2835gpio
+endif
 
 TARGET_CFLAGS += -DRELSTR=\\\"-$(PKG_VERSION)-$(PKG_RELEASE)-OpenWrt\\\"
 

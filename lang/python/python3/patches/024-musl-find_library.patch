@@ -5,16 +5,16 @@ https://git.alpinelinux.org/aports/tree/main/python2/musl-find_library.patch
 
 --- a/Lib/ctypes/util.py
 +++ b/Lib/ctypes/util.py
-@@ -92,6 +92,8 @@ elif sys.platform.startswith("aix"):
+@@ -195,6 +195,8 @@ elif sys.platform == "emscripten":
  elif os.name == "posix":
      # Andreas Degert's find functions, using gcc, /sbin/ldconfig, objdump
      import re, tempfile
 +    from glob import glob
 +    musl_ldso = glob('/lib/ld-musl-*.so.1')
  
-     def _findLib_gcc(name):
-         # Run GCC's linker with the -t (aka --trace) option and examine the
-@@ -252,6 +254,57 @@ elif os.name == "posix":
+     def _is_elf(filename):
+         "Return True if the given file is an ELF file"
+@@ -371,6 +373,57 @@ elif os.name == "posix":
          def find_library(name, is64 = False):
              return _get_soname(_findLib_crle(name, is64) or _findLib_gcc(name))
  

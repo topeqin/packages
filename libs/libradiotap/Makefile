@@ -6,19 +6,17 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=libradiotap
-PKG_VERSION:=2019-04-15
 PKG_RELEASE:=1
 
 PKG_SOURCE_PROTO:=git
-PKG_SOURCE_URL:=https://github.com/radiotap/radiotap-library.git
-PKG_SOURCE_VERSION:=1ca6b4f0d7225971ebcadf575c8f9e00ee55e840
-PKG_MIRROR_HASH:=59d2350d569c4027ca1b23ebbe3519852e194184c1aaa04308712235f387e422
+PKG_SOURCE_URL:=https://github.com/radiotap/radiotap-library
+PKG_SOURCE_DATE:=2023-10-09
+PKG_SOURCE_VERSION:=ee71d224e0faeb9ec4e198d587d4e5aac60d4afe
+PKG_MIRROR_HASH:=c829fcbaaef8ab15467b241fca331d484825bb8de1bf3a59bf29727345ec88d3
 
 PKG_MAINTAINER:=Nick Hainke <vincent@systemli.org>
 PKG_LICENSE:=ISC
 PKG_LICENSE_FILES:=COPYING
-
-PKG_BUILD_PARALLEL:=1
 
 include $(INCLUDE_DIR)/package.mk
 include $(INCLUDE_DIR)/cmake.mk

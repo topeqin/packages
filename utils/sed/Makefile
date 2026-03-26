@@ -8,12 +8,12 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=sed
-PKG_VERSION:=4.8
+PKG_VERSION:=4.9
 PKG_RELEASE:=1
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.xz
 PKG_SOURCE_URL:=@GNU/sed
-PKG_HASH:=f79b0cfea71b37a8eeec8490db6c5f7ae7719c35587f21edb0617f370eeff633
+PKG_HASH:=6e226b732e1cd739464ad6862bd1a1aba42d7982922da7a53519631d24975181
 
 PKG_MAINTAINER:=Russell Senior <russell@personaltelco.net>
 PKG_LICENSE:=GPL-3.0-or-later
@@ -29,8 +29,8 @@ define Package/sed
   SECTION:=utils
   CATEGORY:=Utilities
   TITLE:=sed stream editor utility - full version
-  DEPENDS:=+libpcre
   URL:=https://www.gnu.org/software/sed/
+  ALTERNATIVES:=300:/bin/sed:/usr/libexec/sed-gnu
 endef
 
 define Package/sed/description
@@ -41,23 +41,13 @@ extracting part of a file using pattern matching or substituting multiple
 occurrences of a string within a file.
 endef
 
+CONFIGURE_ARGS += \
+	--disable-acl \
+	--without-selinux
+
 define Package/sed/install
-	$(INSTALL_DIR) $(1)/usr/bin
-	$(CP) $(PKG_INSTALL_DIR)/usr/bin/* $(1)/usr/bin
-endef
-
-CONFIGURE_ARGS+= --disable-acl
-
-define Package/sed/postinst
-#!/bin/sh
-[ -L "$${IPKG_INSTROOT}/bin/sed" ] && rm -f "$${IPKG_INSTROOT}/bin/sed"
-exit 0
-endef
-
-define Package/sed/prerm
-$${IPKG_INSTROOT}/bin/busybox sed -h 2>&1 | grep -q BusyBox && \
-ln -sf busybox $${IPKG_INSTROOT}/bin/sed
-exit 0
+	$(INSTALL_DIR) $(1)/usr/libexec
+	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/bin/sed $(1)/usr/libexec/sed-gnu
 endef
 
 $(eval $(call BuildPackage,sed))

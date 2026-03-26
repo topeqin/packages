@@ -10,7 +10,7 @@ include $(TOPDIR)/rules.mk
 
 PKG_NAME:=cups
 PKG_VERSION:=2.2.12
-PKG_RELEASE:=1
+PKG_RELEASE:=2
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION)-source.tar.gz
 PKG_SOURCE_URL:=https://github.com/apple/cups/releases/download/v$(PKG_VERSION)/
@@ -33,13 +33,12 @@ $(call Package/cups/Default)
   CATEGORY:=Libraries
   DEPENDS:=+zlib +libpthread +libpng +libjpeg +libusb-1.0
   TITLE:=Common UNIX Printing System - Core library
+  BUILDONLY:=1
 endef
 
 define Package/libcups/description
 	Common UNIX Printing System - Core library
 endef
-
-TARGET_LDFLAGS+=-Wl,-rpath-link=$(STAGING_DIR)/usr/lib
 
 CONFIGURE_ARGS+=--with-cups-user="nobody" \
 		--with-cups-group="nogroup" \

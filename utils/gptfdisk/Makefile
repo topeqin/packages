@@ -8,20 +8,20 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=gptfdisk
-PKG_VERSION:=1.0.5
+PKG_VERSION:=1.0.10
 PKG_RELEASE:=1
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=@SF/$(PKG_NAME)
-PKG_HASH:=0e7d3987cd0488ecaf4b48761bc97f40b1dc089e5ff53c4b37abe30bc67dcb2f
+PKG_HASH:=2abed61bc6d2b9ec498973c0440b8b804b7a72d7144069b5a9209b2ad693a282
 
-PKG_MAINTAINER:=Alif M. Ahmad <alive4ever@live.com>
+PKG_MAINTAINER:=
 PKG_LICENSE:=GPL-2.0-or-later
 PKG_LICENSE_FILES:=COPYING
 
 PKG_BUILD_PARALLEL:=1
+PKG_BUILD_FLAGS:=gc-sections lto
 
-include $(INCLUDE_DIR)/uclibc++.mk
 include $(INCLUDE_DIR)/package.mk
 
 define Package/gptfdisk/Default
@@ -29,7 +29,7 @@ define Package/gptfdisk/Default
   CATEGORY:=Utilities
   SUBMENU:=Disc
   URL:=https://www.rodsbooks.com/gdisk
-  DEPENDS:=$(CXX_DEPENDS)
+  DEPENDS:=+libstdcpp
 endef
 
 define Package/gdisk
@@ -73,11 +73,9 @@ define Package/fixparts/description
   Master Boot Record (MBR) partition tables
 endef
 
-TARGET_CXXFLAGS += -std=c++11 -ffunction-sections -fdata-sections -fno-rtti -flto
-TARGET_LDFLAGS += $(if $(CONFIG_USE_GLIBC),-lm) -Wl,--gc-sections,--as-needed
-ifeq ($(CONFIG_USE_UCLIBCXX),y)
-TARGET_LDFLAGS += -nodefaultlibs
-endif
+TARGET_CXXFLAGS += -std=c++11 -fno-rtti
+TARGET_LDFLAGS += -Wl,--as-needed
+MAKE_FLAGS += TARGET=linux
 
 define Package/gdisk/install
 	$(INSTALL_DIR) $(1)/usr/bin

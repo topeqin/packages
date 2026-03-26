@@ -5,7 +5,7 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=postgresql
-PKG_VERSION:=12.1
+PKG_VERSION:=17.5
 PKG_RELEASE:=3
 PKG_MAINTAINER:=Daniel Golle <daniel@makrotopia.org>
 PKG_LICENSE:=PostgreSQL
@@ -14,12 +14,11 @@ PKG_CPE_ID:=cpe:/a:postgresql:postgresql
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.bz2
 PKG_SOURCE_URL:=\
 	https://ftp.postgresql.org/pub/source/v$(PKG_VERSION) \
-	http://ftp.postgresql.org/pub/source/v$(PKG_VERSION) \
-	ftp://ftp.postgresql.org/pub/source/v$(PKG_VERSION)
+	http://ftp.postgresql.org/pub/source/v$(PKG_VERSION)
 
-PKG_HASH:=a09bf3abbaf6763980d0f8acbb943b7629a8b20073de18d867aecdb7988483ed
+PKG_HASH:=fcb7ab38e23b264d1902cb25e6adafb4525a6ebcbd015434aeef9eda80f528d8
 
-PKG_USE_MIPS16:=0
+PKG_BUILD_FLAGS:=no-mips16
 PKG_FIXUP:=autoreconf
 PKG_MACRO_PATHS:=config
 PKG_BUILD_DEPENDS:=postgresql/host
@@ -70,7 +69,7 @@ endef
 define Package/pgsql-server
   SECTION:=utils
   CATEGORY:=Utilities
-  DEPENDS:=+pgsql-cli
+  DEPENDS:=+pgsql-cli +blockd
   TITLE:=PostgreSQL databases Server
   URL:=http://www.postgresql.org/
   SUBMENU:=Database
@@ -82,18 +81,23 @@ PostgreSQL databases Server.
 endef
 
 PGSQL_SERVER_BIN := \
+	pg_amcheck \
 	pg_archivecleanup \
 	pg_basebackup \
+	pg_checksums \
 	pg_controldata \
 	pg_ctl \
 	pg_dump \
 	pg_dumpall \
 	pg_isready \
 	pg_recvlogical \
+	pg_receivewal \
 	pg_resetwal \
 	pg_restore \
-	pg_standby \
+	pg_rewind \
 	pg_upgrade \
+	pg_verifybackup \
+	pg_waldump \
 	postgres \
 	initdb
 
@@ -103,24 +107,20 @@ PGSQL_CLI_EXTRA_BIN := \
 	createuser	\
 	dropdb		\
 	dropuser	\
+	oid2name	\
 	pgbench		\
 	reindexdb	\
-	vacuumdb
+	vacuumdb	\
+	vacuumlo
 
 PGSQL_CONFIG_VARS:= \
 	pgac_cv_snprintf_long_long_int_format="%lld" \
 	pgac_cv_snprintf_size_t_support=yes \
 	USE_DEV_URANDOM=1 \
-	ZIC=zic
-
-ifeq ($(CONFIG_USE_UCLIBC),y)
-# PostgreSQL does not build against uClibc with locales
-# enabled, due to an uClibc bug, see
-# http://lists.uclibc.org/pipermail/uclibc/2014-April/048326.html
-# so overwrite automatic detection and disable locale support
-PGSQL_CONFIG_VARS+= \
-		pgac_cv_type_locale_t=no
-endif
+	ac_cv_file__dev_urandom="/dev/urandom" \
+	ZIC=zic \
+	pgac_cv_prog_cc_LDFLAGS_EX_BE__Wl___export_dynamic=yes \
+	pgac_cv_prog_cc_LDFLAGS__Wl___as_needed=yes
 
 TARGET_CONFIGURE_OPTS+=$(PGSQL_CONFIG_VARS)
 
@@ -129,6 +129,7 @@ HOST_CONFIGURE_ARGS += \
 			--disable-rpath \
 			--without-bonjour \
 			--without-gssapi \
+			--without-icu \
 			--without-ldap \
 			--without-openssl \
 			--without-pam \
@@ -145,6 +146,7 @@ CONFIGURE_ARGS += \
 			--disable-rpath \
 			--without-bonjour \
 			--without-gssapi \
+			--without-icu \
 			--without-ldap \
 			--without-openssl \
 			--without-pam \
@@ -155,6 +157,8 @@ CONFIGURE_ARGS += \
 			--with-zlib="yes" \
 			--enable-depend \
 			$(if $(CONFIG_arc),--disable-spinlocks)
+
+HOST_CFLAGS += -std=gnu99
 
 # Need a native zic and pg_config for build
 define Host/Compile

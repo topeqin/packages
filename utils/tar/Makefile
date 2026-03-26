@@ -8,85 +8,76 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=tar
-PKG_VERSION:=1.32
-PKG_RELEASE:=2
+PKG_VERSION:=1.35
+PKG_RELEASE:=1
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.xz
-PKG_SOURCE_URL:=@GNU/$(PKG_NAME)
-PKG_HASH:=d0d3ae07f103323be809bc3eac0dcc386d52c5262499fe05511ac4788af1fdd8
+PKG_SOURCE_URL:=@GNU/tar
+PKG_HASH:=4d62ff37342ec7aed748535323930c7cf94acf71c3591882b26a7ea50f3edc16
 
 PKG_MAINTAINER:=Álvaro Fernández Rojas <noltari@gmail.com>
 PKG_LICENSE:=GPL-3.0-or-later
 PKG_LICENSE_FILES:=COPYING
 PKG_CPE_ID:=cpe:/a:gnu:tar
 
-PKG_BUILD_PARALLEL:=1
 PKG_INSTALL:=1
+PKG_BUILD_PARALLEL:=1
+PKG_CONFIG_DEPENDS:= \
+	CONFIG_PACKAGE_TAR_POSIX_ACL \
+	CONFIG_PACKAGE_TAR_XATTR \
+	CONFIG_PACKAGE_TAR_BZIP2 \
+	CONFIG_PACKAGE_TAR_GZIP \
+	CONFIG_PACKAGE_TAR_XZ \
+	CONFIG_PACKAGE_TAR_ZSTD
 
 include $(INCLUDE_DIR)/package.mk
 
 define Package/tar
   SECTION:=utils
   CATEGORY:=Utilities
-  DEPENDS:=+PACKAGE_TAR_POSIX_ACL:libacl +PACKAGE_TAR_XATTR:libattr +PACKAGE_TAR_BZIP2:bzip2
-  EXTRA_DEPENDS:=$(if $(CONFIG_PACKAGE_TAR_XZ),xz)
+  DEPENDS:= \
+    +PACKAGE_TAR_BZIP2:bzip2 \
+    +PACKAGE_TAR_POSIX_ACL:libacl \
+    +PACKAGE_TAR_XATTR:libattr \
+    +PACKAGE_TAR_ZSTD:libzstd \
+    +PACKAGE_TAR_XZ:xz
   TITLE:=GNU tar
   URL:=https://www.gnu.org/software/tar/
   MENU:=1
+  ALTERNATIVES:=300:/bin/tar:/usr/libexec/tar-gnu
 endef
 
 define Package/tar/config
-	if PACKAGE_tar
-		config PACKAGE_TAR_POSIX_ACL
-			bool "tar: Enable POSIX ACL support"
-			default y if USE_FS_ACL_ATTR
-			default n
+	config PACKAGE_TAR_POSIX_ACL
+		bool "tar: Enable POSIX ACL support"
+		default y if USE_FS_ACL_ATTR
+		default n
 
-		config PACKAGE_TAR_XATTR
-			bool "tar: Enable extended attribute (xattr) support"
-			default y if USE_FS_ACL_ATTR
-			default n
+	config PACKAGE_TAR_XATTR
+		bool "tar: Enable extended attribute (xattr) support"
+		default y if USE_FS_ACL_ATTR
+		default n
 
-		config PACKAGE_TAR_BZIP2
-			bool "tar: Enable seamless bzip2 support"
-			default y
+	config PACKAGE_TAR_BZIP2
+		bool "tar: Enable seamless bzip2 support"
+		default y
 
-		config PACKAGE_TAR_GZIP
-			bool "tar: Enable seamless gzip support"
-			default y
+	config PACKAGE_TAR_GZIP
+		bool "tar: Enable seamless gzip support. Needed for sysupgrade."
+		default y
 
-		config PACKAGE_TAR_XZ
-			bool "tar: Enable seamless xz support"
-			select PACKAGE_xz-utils
-			select PACKAGE_xz
-			default y
+	config PACKAGE_TAR_XZ
+		bool "tar: Enable seamless xz support"
+		default y
 
-		config PACKAGE_TAR_ZSTD
-			bool "tar: Enable seamless zstd support"
-			select PACKAGE_libzstd
-			default y
-	endif
+	config PACKAGE_TAR_ZSTD
+		bool "tar: Enable seamless zstd support"
+		default y
 endef
 
 define Package/tar/description
 	Tar is a program for packaging a set of files as a
 	single archive in tar format.
-endef
-
-define Package/tar/postinst
-#!/bin/sh
-if [ -e $${IPKG_INSTROOT}/bin/tar ]; then
-  rm -r $${IPKG_INSTROOT}/bin/tar;
-fi
-ln -sf /usr/bin/tar $${IPKG_INSTROOT}/bin/tar
-endef
-
-define Package/tar/postrm
-#!/bin/sh
-rm $${IPKG_INSTROOT}/bin/tar
-ln -s busybox $${IPKG_INSTROOT}/bin/tar
-$${IPKG_INSTROOT}/bin/tar 2>&1 | grep 'applet not found' > /dev/null 2>&1 && rm $${IPKG_INSTROOT}/bin/tar
-exit 0
 endef
 
 CONFIGURE_ARGS += \
@@ -108,8 +99,8 @@ MAKE_FLAGS += \
 	LDFLAGS="$(TARGET_LDLAGS)"
 
 define Package/tar/install
-	$(INSTALL_DIR) $(1)/usr/bin/
-	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/bin/$(PKG_NAME) $(1)/usr/bin/
+	$(INSTALL_DIR) $(1)/usr/libexec
+	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/bin/tar $(1)/usr/libexec/tar-gnu
 endef
 
 $(eval $(call BuildPackage,tar))

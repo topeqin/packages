@@ -5,15 +5,15 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=python-paho-mqtt
-PKG_VERSION:=1.5.0
+PKG_VERSION:=1.6.1
 PKG_RELEASE:=2
 
-PKG_MAINTAINER:=Josef Schlehofer <josef.schlehofer@nic.cz>, Alexandru Ardelean <ardeleanalex@gmail.com>
-PKG_LICENSE:=EPL-1.0 Eclipse Distribution License v1.0
-PKG_LICENSE_FILES:=epl-v10 edl-v10
+PKG_MAINTAINER:=Josef Schlehofer <pepe.schlehofer@gmail.com>, Alexandru Ardelean <ardeleanalex@gmail.com>
+PKG_LICENSE:=EPL-2.0 Eclipse Distribution License v1.0
+PKG_LICENSE_FILES:=epl-v20 edl-v10 LICENSE.txt
 
 PYPI_NAME:=paho-mqtt
-PKG_HASH:=e3d286198baaea195c8b3bc221941d25a3ab0e1507fc1779bdb7473806394be4
+PKG_HASH:=2a8291c81623aec00372b5a85558a372c747cbca8e9934dfe218638b8eefc26f
 
 include ../pypi.mk
 include $(INCLUDE_DIR)/package.mk
@@ -23,13 +23,13 @@ define Package/python3-paho-mqtt
   SECTION:=lang
   CATEGORY:=Languages
   SUBMENU:=Python
-  TITLE:=python3-paho-mqtt
+  TITLE:=MQTT version 5.0/3.1.1 client class
   URL:=http://eclipse.org/paho
-  DEPENDS:=+python3-light
+  DEPENDS:=+python3-light +python3-uuid
 endef
 
 define Package/python3-paho-mqtt/description
-  MQTT version 3.1/3.1.1 client class
+  MQTT version 3.1/3.1.1/5.0 client class
 endef
 
 $(eval $(call Py3Package,python3-paho-mqtt))

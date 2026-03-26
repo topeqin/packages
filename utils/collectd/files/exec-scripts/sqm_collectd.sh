@@ -3,7 +3,7 @@
 . /usr/share/libubox/jshn.sh
 
 HOSTNAME="${COLLECTD_HOSTNAME:-localhost}"
-INTERVAL="${COLLECTD_INTERVAL:-60.000}"
+INTERVAL="${COLLECTD_INTERVAL:-60}"
 
 handle_cake() {
 	local ifc ifr tin i
@@ -79,7 +79,8 @@ process_qdisc() {
 	local ifc jsn
 
 	ifc="$1"
-	jsn=$(tc -s -j qdisc show dev "$ifc")
+	jsn=$(tc -s -j qdisc show dev "$ifc") || return
+
 	# strip leading & trailing []
 	jsn="${jsn#[}" ; jsn="${jsn%]}"
 
@@ -98,9 +99,10 @@ process_qdisc() {
 	json_cleanup
 }
 
-while true ; do
+# while not orphaned
+while [ $(awk '$1 ~ "^PPid:" {print $2;exit}' /proc/$$/status) -ne 1 ] ; do
 	for ifc in "$@" ; do
 		process_qdisc "$ifc"
 	done
-	sleep "${INTERVAL%.000}"
+	sleep "${INTERVAL%%.*}"
 done

@@ -8,18 +8,19 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=sysstat
-PKG_VERSION:=12.2.1
+PKG_VERSION:=12.7.5
 PKG_RELEASE:=2
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.xz
-PKG_SOURCE_URL:=http://pagesperso-orange.fr/sebastien.godard/
-PKG_HASH:=8edb0e19b514ac560a098a02933a4735b881296d61014db89bf80f05dd7a4732
+PKG_SOURCE_URL:=https://sysstat.github.io/sysstat-packages
+PKG_HASH:=57664040a549d33bb06a1121c7124d4cadd9b8b35f815856c194393047cd4d6b
 
-PKG_MAINTAINER:=Marko Ratkaj <marko.ratkaj@sartura.hr>
+PKG_MAINTAINER:=Marko Ratkaj <markoratkaj@gmail.com>
 PKG_LICENSE:=GPL-2.0-or-later
 PKG_LICENSE_FILES:=COPYING
 PKG_CPE_ID:=cpe:/a:sysstat_project:sysstat
 
+PKG_FIXUP:=autoreconf
 PKG_INSTALL:=1
 PKG_BUILD_PARALLEL:=1
 
@@ -30,8 +31,8 @@ define Package/sysstat
   SECTION:=utils
   CATEGORY:=Utilities
   TITLE:=Sysstat performance monitoring tools
-  URL:=http://pagesperso-orange.fr/sebastien.godard/index.html
-  DEPENDS:=$(INTL_DEPENDS)
+  URL:=https://sysstat.github.io/
+  DEPENDS:=$(INTL_DEPENDS) +xz-utils +xz
 endef
 
 define Package/sysstat/description

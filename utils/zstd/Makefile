@@ -1,22 +1,20 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=zstd
-PKG_VERSION:=1.4.4
-PKG_RELEASE:=3
+PKG_VERSION:=1.5.7
+PKG_RELEASE:=1
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
-PKG_SOURCE_URL:=https://codeload.github.com/facebook/zstd/tar.gz/v$(PKG_VERSION)?
-PKG_HASH:=a364f5162c7d1a455cc915e8e3cf5f4bd8b75d09bc0f53965b0c9ca1383c52c8
+PKG_SOURCE_URL:=https://github.com/facebook/zstd/releases/download/v$(PKG_VERSION)
+PKG_HASH:=eb33e51f49a15e023950cd7825ca74a4a2b43db8354825ac24fc1b7ee09e6fa3
 
 PKG_MAINTAINER:=
 PKG_LICENSE:=GPL-2.0-or-later
 PKG_LICENSE_FILES:=COPYING
-
-PKG_BUILD_DEPENDS:=meson/host
-PKG_INSTALL:=1
+PKG_CPE_ID:=cpe:/a:facebook:zstandard
 
 include $(INCLUDE_DIR)/package.mk
-include ../../devel/meson/meson.mk
+include $(INCLUDE_DIR)/meson.mk
 
 MESON_BUILD_DIR:=$(BUILD_DIR)/$(PKG_NAME)-$(PKG_VERSION)/build/meson/openwrt-build
 
@@ -44,7 +42,7 @@ define Package/libzstd/config
 		depends on PACKAGE_libzstd
 		default y
 		help
-			This enables additional optmizations using the -O3 compilation flag.
+			This enables additional optimizations using the -O3 compilation flag.
 endef
 
 define Package/zstd
@@ -65,13 +63,8 @@ TARGET_CFLAGS:= $(filter-out -O%,$(TARGET_CFLAGS)) -O3
 endif
 
 MESON_ARGS += \
-	-Dlegacy_level=1 \
+	-Dlegacy_level=7 \
 	-Ddebug_level=0 \
-	-Dbacktrace=false \
-	-Dstatic_runtime=false \
-	-Dbin_programs=true \
-	-Dbin_tests=false \
-	-Dbin_control=false \
 	-Dzlib=disabled \
 	-Dlzma=disabled \
 	-Dlz4=disabled \

@@ -8,7 +8,7 @@ include $(TOPDIR)/rules.mk
 
 PKG_NAME:=opendkim
 PKG_VERSION:=2.10.3
-PKG_RELEASE:=4
+PKG_RELEASE:=7
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=@SF/$(PKG_NAME)
@@ -17,6 +17,7 @@ PKG_MAINTAINER:=Val Kulkov <val.kulkov@gmail.com>
 
 PKG_LICENSE:=BSD-3-Clause
 PKG_LICENSE_FILES:=LICENSE LICENSE.Sendmail
+PKG_CPE_ID:=cpe:/a:opendkim:opendkim
 
 PKG_INSTALL:=1
 PKG_BUILD_DEPENDS:=openssl
@@ -40,7 +41,7 @@ endef
 define Package/libopendkim
   SECTION:=mail
   CATEGORY:=Libraries
-  DEPENDS:=+libopenssl +libmilter-sendmail
+  DEPENDS:=+libopenssl +libmilter-sendmail +USE_GLIBC:libbsd
   TITLE:=Library for signing and verifying DKIM signatures
   URL:=http://opendkim.org/
 endef
@@ -61,14 +62,14 @@ define Package/opendkim-tools/description
   opendkim-genzone, opendkim-testkey and opendkim-testmsg tools.
 endef
 
-TARGET_CFLAGS += $(FPIC)
-
 CONFIGURE_ARGS += \
 	--without-db \
 	--without-gcov \
 	--without-gprof \
 	--without-lcov \
-	--with-milter=$(STAGING_DIR)/usr
+	$(if $(CONFIG_USE_GLIBC),,--without-libbsd) \
+	--with-milter=$(STAGING_DIR)/usr \
+	--with-pic
 
 define Build/InstallDev
 	$(INSTALL_DIR) $(1)/usr/lib $(1)/usr/sbin

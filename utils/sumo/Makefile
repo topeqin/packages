@@ -8,19 +8,16 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=sumo
-PKG_VERSION:=1.3.1
-PKG_RELEASE:=1
+PKG_VERSION:=1.23.1
+PKG_RELEASE:=2
 
 PKG_SOURCE:=$(PKG_NAME)-src-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=@SF/sumo
-PKG_HASH:=dd089814499cc8d21ea90ab506adbb01e7fda9d9685d9d90a1a41cc3fe680505
+PKG_HASH:=016c506d8bd5d0b6f8e2229ac5dbb9e948535a041559cdd2ff6b616293ac21a8
 
 PKG_MAINTAINER:=Álvaro Fernández Rojas <noltari@gmail.com>
 PKG_LICENSE:=GPL-3.0-or-later
 PKG_LICENSE_FILES:=COPYING
-
-CMAKE_INSTALL:=1
-PKG_BUILD_PARALLEL:=1
 
 include $(INCLUDE_DIR)/package.mk
 include $(INCLUDE_DIR)/cmake.mk
@@ -30,7 +27,7 @@ define Package/sumo
   CATEGORY:=Utilities
   TITLE:=SUMO - Simulation of Urban MObility
   URL:=https://sumo.dlr.de/
-  DEPENDS:=+libxerces-c +zlib
+  DEPENDS:=+libfmt +libxerces-c +zlib
 endef
 
 define Package/sumo/description
@@ -41,6 +38,10 @@ define Package/sumo/description
   and emission calculation. SUMO can be enhanced with custom models and provides
   various APIs to remotely control the simulation.
 endef
+
+CMAKE_OPTIONS += \
+	-DCCACHE_SUPPORT=OFF \
+	-DENABLE_PYTHON_BINDINGS=OFF
 
 define Package/sumo/install
 	$(INSTALL_DIR) $(1)/usr/bin

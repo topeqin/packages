@@ -6,19 +6,18 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=libirecovery
-PKG_VERSION:=1.0.0
-PKG_RELEASE:=2
+PKG_VERSION:=1.2.1
+PKG_RELEASE:=1
 
-PKG_SOURCE_PROTO:=git
-PKG_SOURCE_URL:=https://github.com/libimobiledevice/libirecovery
-PKG_SOURCE_VERSION:=2bd64e6d9c82c547bdd15cb32a74c1de5fd53bd8
-PKG_MIRROR_HASH:=eff43fbb0140ba653b514ef5c0a6ecc715dd05d8a61d405775573ae5f78995d7
+PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.bz2
+PKG_SOURCE_URL:=https://github.com/libimobiledevice/libirecovery/releases/download/$(PKG_VERSION)
+PKG_HASH:=d25f4b85c24df206efbbbd2d6d45d1637229e756c52d535eef047a163799f67c
 
 PKG_MAINTAINER:=Rosen Penev <rosenp@gmail.com>
 PKG_LICENSE:=LGPL-2.1-or-later
 PKG_LICENSE_FILES:=COPYING
+PKG_CPE_ID:=cpe:/a:libimobiledevice:libirecovery
 
-PKG_FIXUP:=autoreconf
 PKG_INSTALL:=1
 PKG_BUILD_PARALLEL:=1
 
@@ -39,7 +38,7 @@ define Package/libirecovery
   TITLE:=A library that talks to Apple iBoot/iBSS
   SECTION:=libs
   CATEGORY:=Libraries
-  DEPENDS:=+libreadline +libusb-1.0
+  DEPENDS:=+libimobiledevice-glue +libreadline +libusb-1.0
 endef
 
 define Package/libirecovery/description
@@ -59,20 +58,22 @@ define Package/irecovery/description
   This package contains the libirecovery utilities.
 endef
 
-CONFIGURE_ARGS += --without-udev
+CONFIGURE_ARGS += \
+	--disable-static \
+	--without-udev
 
 define Build/InstallDev
 	$(INSTALL_DIR) $(1)/usr/include
 	$(CP) $(PKG_INSTALL_DIR)/usr/include/libirecovery.h $(1)/usr/include/
 	$(INSTALL_DIR) $(1)/usr/lib
-	$(CP) $(PKG_INSTALL_DIR)/usr/lib/libirecovery.{a,la,so*} $(1)/usr/lib/
+	$(CP) $(PKG_INSTALL_DIR)/usr/lib/libirecovery-1.0.so* $(1)/usr/lib/
 	$(INSTALL_DIR) $(1)/usr/lib/pkgconfig
-	$(CP) $(PKG_INSTALL_DIR)/usr/lib/pkgconfig/libirecovery.pc $(1)/usr/lib/pkgconfig/
+	$(CP) $(PKG_INSTALL_DIR)/usr/lib/pkgconfig/libirecovery-1.0.pc $(1)/usr/lib/pkgconfig/
 endef
 
 define Package/libirecovery/install
 	$(INSTALL_DIR) $(1)/usr/lib
-	$(CP) $(PKG_INSTALL_DIR)/usr/lib/libirecovery.so.* $(1)/usr/lib/
+	$(CP) $(PKG_INSTALL_DIR)/usr/lib/libirecovery-1.0.so.* $(1)/usr/lib/
 endef
 
 define Package/irecovery/install

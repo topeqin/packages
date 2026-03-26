@@ -8,21 +8,20 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=domoticz
-PKG_VERSION:=2020.1
-PKG_RELEASE:=2
+PKG_VERSION:=2025.2
+PKG_RELEASE:=3
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
-PKG_SOURCE_URL:=https://github.com/domoticz/domoticz/archive/$(PKG_VERSION)/$(PKG_SOURCE)
-PKG_HASH:=d0c17b2082dad8a8caeed888b7d4c191975e74a2808b5d078305f5327b82442d
+PKG_SOURCE_URL:=https://codeload.github.com/domoticz/domoticz/tar.gz/$(PKG_VERSION)?
+PKG_HASH:=fd016f4ffe419e8d559bc0a7f9de5ec4fcaf485fc9d1464c8e8221102b13f589
 
+PKG_MAINTAINER:=David Woodhouse <dwmw2@infradead.org>
 PKG_LICENSE:=GPL-3.0
 PKG_LICENSE_FILES:=License.txt
+PKG_CPE_ID:=cpe:/a:domoticz:domoticz
 
-PKG_BUILD_DEPENDS:=python3
-PKG_BUILD_PARALLEL:=1
-PKG_USE_MIPS16:=0
-
-CMAKE_INSTALL:=1
+PKG_BUILD_DEPENDS:=python3 minizip cereal boost jwt-cpp
+PKG_BUILD_FLAGS:=no-mips16 lto
 
 include $(INCLUDE_DIR)/package.mk
 include $(INCLUDE_DIR)/cmake.mk
@@ -32,20 +31,22 @@ define Package/domoticz
   CATEGORY:=Utilities
   TITLE:=Open Source Home Automation System
   URL:=http://domoticz.com/
-  MAINTAINER:=
   USERID:=domoticz=6144:domoticz=6144
   DEPENDS:= \
 	+boost \
 	+boost-date_time \
-	+boost-system \
 	+boost-thread \
+	+jsoncpp \
 	+libcurl \
-	+libmosquittopp \
+	+python3 \
+	+minizip \
+	+lua5.3 \
+	+libfmt \
+	+libmosquitto \
 	+libopenssl \
 	+libopenzwave \
 	+libsqlite3 \
 	+libstdcpp \
-	+telldus-core \
 	+zlib
 endef
 
@@ -56,18 +57,24 @@ endef
 CMAKE_OPTIONS += \
 	-DBUILD_SHARED_LIBS=yes \
 	-DBoost_NO_BOOST_CMAKE=yes \
+	-DGIT_SUBMODULE=no \
 	-DCMAKE_BUILD_TYPE=Release \
 	-DUSE_BUILTIN_MQTT=no \
 	-DUSE_BUILTIN_SQLITE=no \
+	-DUSE_BUILTIN_JSONCPP=no \
+	-DUSE_BUILTIN_MINIZIP=no \
+	-DUSE_BUILTIN_LIBFMT=no \
+	-DUSE_BUILTIN_JWTCPP=no \
+	-DUSE_LUA_STATIC=no \
 	-DUSE_STATIC_BOOST=no \
 	-DUSE_STATIC_LIBSTDCXX=no \
 	-DUSE_STATIC_OPENZWAVE=no \
 	-DUSE_OPENSSL_STATIC=no \
 	-DUSE_PYTHON=yes \
-	-DWITH_LIBUSB=no
+	-DWITH_LIBUSB=no \
+	-DWITH_TELLDUSCORE=no
 
-TARGET_CFLAGS += -flto -DBOOST_BIND_GLOBAL_PLACEHOLDERS
-TARGET_CXXFLAGS += -DWITH_GPIO -flto
+TARGET_CXXFLAGS += -DWITH_GPIO
 
 define Build/Prepare
 	$(call Build/Prepare/Default)

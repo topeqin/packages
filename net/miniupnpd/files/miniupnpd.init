@@ -5,6 +5,7 @@ START=94
 STOP=15
 USE_PROCD=1
 PROG=/usr/sbin/miniupnpd
+[ -x "$(command -v nft)" ] && FW="fw4" || FW="fw3"
 
 upnpd_get_port_range() {
 	local var="$1"; shift
@@ -60,13 +61,14 @@ upnpd() {
 	local external_iface external_iface6 external_zone external_ip internal_iface
 	local upload download log_output port config_file serial_number model_number
 	local use_stun stun_host stun_port uuid notify_interval presentation_url
-	local upnp_lease_file clean_ruleset_threshold clean_ruleset_interval
+	local upnp_lease_file upnp_lease_file6 ipv6_disable
 
 	local enabled
 	config_get_bool enabled config enabled 1
 	[ "$enabled" -eq 0 ] && return 1
 
 	config_get external_iface config external_iface
+	config_get external_iface6 config external_iface6
 	config_get external_zone config external_zone
 	config_get external_ip config external_ip
 	config_get internal_iface config internal_iface
@@ -84,24 +86,33 @@ upnpd() {
 	config_get notify_interval config notify_interval
 	config_get presentation_url config presentation_url
 	config_get upnp_lease_file config upnp_lease_file
-	config_get clean_ruleset_threshold config clean_ruleset_threshold
-	config_get clean_ruleset_interval config clean_ruleset_interval
+	config_get upnp_lease_file6 config upnp_lease_file6
+	config_get ipv6_disable config ipv6_disable 0
 
 	local conf ifname ifname6
 
 	. /lib/functions/network.sh
 
-	# manual external interface overrides everything
-	[ -z "$external_iface" ] && {
-		# manual external zone (if dynamically find interfaces
-		# belonging to it) overrides network_find_wan*
-		[ -n "$external_zone" ] && ifname=$(fw3 -q zone "$external_zone" | head -1)
-		[ -z "$external_iface" ] && network_find_wan external_iface
-		[ -z "$external_iface6" ] && network_find_wan6 external_iface6
-	}
-
-	[ -z "$ifname" ] && network_get_device ifname "$external_iface"
-	[ -z "$ifname6" ] && network_get_device ifname6 "$external_iface6"
+	if [ -n "$external_iface" ] ; then
+		network_get_device ifname "$external_iface"
+	else
+		if [ -n "$external_zone" ] ; then
+			ifname=$($FW -q zone "$external_zone" 2>/dev/null | head -1)
+		else
+			network_find_wan external_iface && \
+				network_get_device ifname "$external_iface"
+		fi
+	fi
+	if [ -n "$external_iface6" ] ; then
+		network_get_device ifname6 "$external_iface6"
+	else
+		if [ -n "$external_zone" ] ; then
+			ifname6=$($FW -q zone "$external_zone" 2>/dev/null | head -1)
+		else
+			network_find_wan6 external_iface6 && \
+				network_get_device ifname6 "$external_iface6"
+		fi
+	fi
 
 	if [ -n "$config_file" ]; then
 		conf="$config_file"
@@ -119,7 +130,6 @@ upnpd() {
 		for iface in ${internal_iface:-lan}; do
 			local device
 			network_get_device device "$iface" && echo "listening_ip=$device"
-			network_get_device device "$iface" && echo "ipv6_listening_ip=$device"
 		done
 
 		config_load "upnpd"
@@ -129,6 +139,7 @@ upnpd() {
 		upnpd_write_bool system_uptime 1
 		upnpd_write_bool igdv1 0 force_igd_desc_v1
 		upnpd_write_bool use_stun 0 ext_perform_stun
+		upnpd_write_bool ipv6_disable $ipv6_disable
 
 		[ "$use_stun" -eq 0 ] || {
 			[ -n "$stun_host" ] && echo "ext_stun_host=$stun_host"
@@ -141,10 +152,9 @@ upnpd() {
 		}
 
 		[ -n "$upnp_lease_file" ] && touch "$upnp_lease_file" && echo "lease_file=$upnp_lease_file"
+		[ -n "$upnp_lease_file6" ] && touch "$upnp_lease_file6" && echo "lease_file6=$upnp_lease_file6"
 		[ -n "$presentation_url" ] && echo "presentation_url=$presentation_url"
 		[ -n "$notify_interval" ] && echo "notify_interval=$notify_interval"
-		[ -n "$clean_ruleset_threshold" ] && echo "clean_ruleset_threshold=$clean_ruleset_threshold"
-		[ -n "$clean_ruleset_interval" ] && echo "clean_ruleset_interval=$clean_ruleset_interval"
 		[ -n "$serial_number" ] && echo "serial=$serial_number"
 		[ -n "$model_number" ] && echo "model_number=$model_number"
 		[ -n "$port" ] && echo "port=$port"
@@ -159,17 +169,31 @@ upnpd() {
 
 		config_foreach conf_rule_add perm_rule
 
+		if [ "$FW" = "fw4" ]; then
+			#When using nftables configure miniupnpd to use its own table and chains
+			echo "upnp_table_name=fw4"
+			echo "upnp_nat_table_name=fw4"
+			echo "upnp_forward_chain=upnp_forward"
+			echo "upnp_nat_chain=upnp_prerouting"
+			echo "upnp_nat_postrouting_chain=upnp_postrouting"
+		fi
+
 		} > "$tmpconf"
 	fi
 
 	if [ -n "$ifname" ]; then
 		# start firewall
-		iptables -L MINIUPNPD >/dev/null 2>&1 || fw3 reload
+		if [ "$FW" = "fw4" ]; then
+			nft -s -t -n list chain inet fw4 upnp_forward >/dev/null 2>&1 || fw4 reload
+		else
+			iptables -L MINIUPNPD >/dev/null 2>&1 || fw3 reload
+		fi
 	else
 		logger -t "upnp daemon" "external interface not found, not starting"
 	fi
 
 	procd_open_instance
+	procd_set_param file "$conf" "/etc/config/firewall"
 	procd_set_param command "$PROG"
 	procd_append_param command -f "$conf"
 	[ "$log_output" = "1" ] && procd_append_param command -d
@@ -177,11 +201,16 @@ upnpd() {
 }
 
 stop_service() {
-	iptables -t nat -F MINIUPNPD 2>/dev/null
-	iptables -t nat -F MINIUPNPD-POSTROUTING 2>/dev/null
-	iptables -t filter -F MINIUPNPD 2>/dev/null
-
-	[ -x /usr/sbin/ip6tables ] && ip6tables -t filter -F MINIUPNPD 2>/dev/null
+	if [ "$FW" = "fw3" ]; then
+		iptables -t nat -F MINIUPNPD 2>/dev/null
+		iptables -t nat -F MINIUPNPD-POSTROUTING 2>/dev/null
+		iptables -t filter -F MINIUPNPD 2>/dev/null
+		[ -x /usr/sbin/ip6tables ] && ip6tables -t filter -F MINIUPNPD 2>/dev/null
+	else
+		nft flush chain inet fw4 upnp_forward 2>/dev/null
+		nft flush chain inet fw4 upnp_prerouting 2>/dev/null
+		nft flush chain inet fw4 upnp_postrouting 2>/dev/null
+	fi
 }
 
 start_service() {

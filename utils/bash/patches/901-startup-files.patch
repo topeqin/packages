@@ -1,6 +1,6 @@
 --- a/config-top.h
 +++ b/config-top.h
-@@ -91,20 +91,20 @@
+@@ -92,20 +92,20 @@
  #define DEFAULT_BASHRC "~/.bashrc"
  
  /* System-wide .bashrc file for interactive shells. */
@@ -23,5 +23,5 @@
 -/* #define SSH_SOURCE_BASHRC */
 +#define SSH_SOURCE_BASHRC
  
- /* Define if you want the case-capitalizing operators (~[~]) and the
+ /* Define if you want the case-toggling operators (~[~]) and the
     `capcase' variable attribute (declare -c). */

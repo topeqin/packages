@@ -7,7 +7,7 @@ include $(TOPDIR)/rules.mk
 
 PKG_NAME:=telldus-core
 PKG_VERSION:=2.1.2
-PKG_RELEASE:=3
+PKG_RELEASE:=9
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=http://download.telldus.com/TellStick/Software/telldus-core/
@@ -18,19 +18,29 @@ PKG_LICENSE:=LGPL-2.1-or-later
 PKG_LICENSE_FILES:=LICENSE
 
 CMAKE_INSTALL:=1
-PKG_BUILD_PARALLEL:=0
-PKG_BUILD_DEPENDS:=!USE_GLIBC:argp-standalone
+PKG_BUILD_DEPENDS:=argp-standalone
 
 include $(INCLUDE_DIR)/package.mk
-include $(INCLUDE_DIR)/nls.mk
 include $(INCLUDE_DIR)/cmake.mk
+
+define Download/argp-cmake
+	URL:=@GITHUB/alehaa/CMake-argp/e7e77e68d062708edf055f944d3094b0ce0b11b8/cmake
+	FILE:=Findargp.cmake
+	HASH:=b74e961260d17bc9af868be59053e50739dc94e06cbe73e3fced414a070a29fd
+endef
+
+define Build/Prepare
+	$(eval $(call Download,argp-cmake))
+	$(Build/Prepare/Default)
+	$(CP) $(DL_DIR)/Findargp.cmake $(PKG_BUILD_DIR)/cmake/
+endef
 
 define Package/telldus-core
 	SECTION:=utils
 	CATEGORY:=Utilities
 	TITLE:=Telldus TellStick USB interface
 	URL:=https://telldus.com
-	DEPENDS:=+confuse +libftdi +libstdcpp $(ICONV_DEPENDS)
+	DEPENDS:=+confuse +libftdi1 +libstdcpp
 endef
 
 define Package/telldus-core/description
@@ -42,13 +52,10 @@ define Package/telldus-core/conffiles
 /etc/tellstick.conf
 endef
 
-CMAKE_OPTIONS+=\
+CMAKE_OPTIONS += \
 	-DBUILD_LIBTELLDUS-CORE=1 \
 	-DBUILD_TDTOOL=1 \
-	-DGENERATE_MAN=0 \
-	-DICONV_LIBRARY=-liconv
-
-TARGET_CXXFLAGS += $(if $(ICONV_FULL),-D_FREEBSD)
+	-DGENERATE_MAN=0
 
 define Package/telldus-core/install
 	$(INSTALL_DIR)  $(1)/usr/bin

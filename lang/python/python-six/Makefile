@@ -8,20 +8,19 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=python-six
-PKG_VERSION:=1.14.0
-PKG_RELEASE:=2
+PKG_VERSION:=1.17.0
+PKG_RELEASE:=1
 
 PYPI_NAME:=six
-PKG_HASH:=236bdbdce46e6e6a3d61a337c0f8b763ca1e8717c03b369e87a7ec7ce1319c0a
+PKG_HASH:=ff70335d468e7eb6ec65b95b99d3a2836546063f63acc5171de367e834932a81
 
 PKG_LICENSE:=MIT
 PKG_LICENSE_FILES:=LICENSE
-PKG_MAINTAINER:=Jeffery To <jeffery.to@gmail.com>, Alexandru Ardelean <ardeleanalex@gmail.com>
+PKG_MAINTAINER:=Alexandru Ardelean <ardeleanalex@gmail.com>
 
-HOST_BUILD_DEPENDS:=python3/host
+PKG_BUILD_DEPENDS:=python-setuptools/host
 
 include ../pypi.mk
-include $(INCLUDE_DIR)/host-build.mk
 include $(INCLUDE_DIR)/package.mk
 include ../python3-package.mk
 
@@ -40,14 +39,6 @@ for smoothing over the differences between the Python versions with the goal of
 writing Python code that is compatible on both Python versions.  See the
 documentation for more information on what is provided.
 endef
-
-define Host/Compile
-	$(call HostPython3/ModSetup,,install --prefix="" --root="$(STAGING_DIR_HOSTPKG)")
-endef
-
-Host/Install:=
-
-$(eval $(call HostBuild))
 
 $(eval $(call Py3Package,python3-six))
 $(eval $(call BuildPackage,python3-six))

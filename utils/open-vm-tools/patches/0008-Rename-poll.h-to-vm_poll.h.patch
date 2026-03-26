@@ -1,8 +1,24 @@
-diff --git a/lib/asyncsocket/asyncsocket.c b/lib/asyncsocket/asyncsocket.c
-index 07a5d04b..01181a95 100644
+From 5b45a812a5a3e9509021043f83529cccc13af26a Mon Sep 17 00:00:00 2001
+From: Natanael Copa <ncopa@alpinelinux.org>
+Date: Tue, 17 Nov 2015 10:57:31 +0000
+Subject: [PATCH] Rename poll.h to vm_poll.h
+
+musl libc's system headers pulls in open-vm-tools' poll.h. To avoid this
+we rename poll.h to vm_poll.h.
+
+Signed-off-by: Natanael Copa <ncopa@alpinelinux.org>
+---
+ lib/asyncsocket/asyncsocket.c     | 2 +-
+ lib/hgfsServer/hgfsServer.c       | 2 +-
+ lib/include/asyncsocket.h         | 2 +-
+ lib/include/pollImpl.h            | 2 +-
+ lib/include/{poll.h => vm_poll.h} | 0
+ lib/rpcIn/rpcin.c                 | 2 +-
+ 6 files changed, 5 insertions(+), 5 deletions(-)
+
 --- a/lib/asyncsocket/asyncsocket.c
 +++ b/lib/asyncsocket/asyncsocket.c
-@@ -86,7 +86,7 @@
+@@ -87,7 +87,7 @@
  #include "random.h"
  #include "asyncsocket.h"
  #include "asyncSocketBase.h"
@@ -11,24 +27,20 @@ index 07a5d04b..01181a95 100644
  #include "log.h"
  #include "err.h"
  #include "hostinfo.h"
-diff --git a/lib/hgfsServer/hgfsServer.c b/lib/hgfsServer/hgfsServer.c
-index 46224551..fc691286 100644
 --- a/lib/hgfsServer/hgfsServer.c
 +++ b/lib/hgfsServer/hgfsServer.c
-@@ -48,7 +48,7 @@
- #include "hgfsServerOplock.h"
+@@ -51,7 +51,7 @@
  #include "hgfsDirNotify.h"
+ #include "hgfsThreadpool.h"
  #include "userlock.h"
 -#include "poll.h"
 +#include "vm_poll.h"
  #include "mutexRankLib.h"
  #include "vm_basic_asm.h"
  #include "unicodeOperations.h"
-diff --git a/lib/include/asyncsocket.h b/lib/include/asyncsocket.h
-index 95a5e464..a4b4e5aa 100644
 --- a/lib/include/asyncsocket.h
 +++ b/lib/include/asyncsocket.h
-@@ -164,7 +164,7 @@ typedef struct AsyncSocket AsyncSocket;
+@@ -177,7 +177,7 @@ typedef struct AsyncSocket AsyncSocket;
   * Or the client can specify its favorite poll class and locking behavior.
   * Use of IVmdbPoll is only supported for regular sockets and for Attach.
   */
@@ -37,8 +49,6 @@ index 95a5e464..a4b4e5aa 100644
  struct IVmdbPoll;
  typedef struct AsyncSocketPollParams {
     int flags;               /* Default 0, only POLL_FLAG_NO_BULL is valid */
-diff --git a/lib/include/pollImpl.h b/lib/include/pollImpl.h
-index 46442e55..8bc66997 100644
 --- a/lib/include/pollImpl.h
 +++ b/lib/include/pollImpl.h
 @@ -44,7 +44,7 @@
@@ -50,12 +60,6 @@ index 46442e55..8bc66997 100644
  #include "vm_basic_asm.h"
  
  #if defined(__cplusplus)
-diff --git a/lib/include/poll.h b/lib/include/vm_poll.h
-similarity index 100%
-rename from lib/include/poll.h
-rename to lib/include/vm_poll.h
-diff --git a/lib/rpcIn/rpcin.c b/lib/rpcIn/rpcin.c
-index 47a3380e..660382c6 100644
 --- a/lib/rpcIn/rpcin.c
 +++ b/lib/rpcIn/rpcin.c
 @@ -57,7 +57,7 @@

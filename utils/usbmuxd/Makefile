@@ -8,18 +8,17 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=usbmuxd
-PKG_SOURCE_DATE:=2020-01-20
-PKG_SOURCE_VERSION:=8a69f1a78a58476f77b66916091d2405d0cd815f
-PKG_RELEASE:=2
+PKG_RELEASE:=1
 
 PKG_SOURCE_PROTO:=git
-PKG_SOURCE_URL=https://github.com/libimobiledevice/usbmuxd
-PKG_MIRROR_HASH:=cf6046fccd1a03d7970618b7ad958ef1437f717cc81af706ddf62c09a1746743
+PKG_SOURCE_URL:=https://github.com/libimobiledevice/usbmuxd.git
+PKG_SOURCE_DATE:=2025-02-01
+PKG_SOURCE_VERSION:=523f7004dce885fe38b4f80e34a8f76dc8ea98b5
+PKG_MIRROR_HASH:=f340f0bbbe65135a9a9d52a4e28cd64b1285930560f999f156124dfde7b42850
 
 PKG_MAINTAINER:=Rosen Penev <rosenp@gmail.com>
 PKG_LICENSE:=GPL-2.0-or-later
 PKG_LICENSE_FILES:=COPYING.GPLv2
-PKG_CPE_ID:=cpe:/a:libimobiledevice:usbmuxd
 
 PKG_FIXUP:=autoreconf
 PKG_INSTALL:=1
@@ -33,7 +32,7 @@ define Package/usbmuxd
   SUBMENU:=libimobiledevice
   TITLE:=USB multiplexing daemon
   URL:=https://www.libimobiledevice.org/
-  DEPENDS:=+librt +libusb-1.0 +libusbmuxd +libopenssl +libimobiledevice
+  DEPENDS:=+libusb-1.0 +libusbmuxd +libopenssl +libimobiledevice +usbutils
 endef
 
 define Package/usbmuxd/description
@@ -49,10 +48,14 @@ define Package/usbmuxd/conffiles
 /etc/lockdown/SystemConfiguration.plist
 endef
 
-CONFIGURE_ARGS += --with-systemd
+CONFIGURE_ARGS += \
+	--with-systemd \
+	PACKAGE_VERSION=$(PKG_VERSION)
 
 define Package/usbmuxd/install
+	$(INSTALL_DIR) $(1)/etc/hotplug.d/usb
 	$(INSTALL_DIR) $(1)/etc/init.d
+	$(INSTALL_BIN) ./files/usbmuxd.hotplug $(1)/etc/hotplug.d/usb/40-usbmuxd
 	$(INSTALL_BIN) ./files/usbmuxd.init $(1)/etc/init.d/usbmuxd
 	$(INSTALL_DIR) $(1)/usr/sbin
 	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/sbin/usbmuxd $(1)/usr/sbin/
